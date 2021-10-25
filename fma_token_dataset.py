@@ -4,7 +4,7 @@ import pandas as pd
 import random
 
 class FMATokenDataset(Dataset):
-    def __init__(self, ds_path, length=2048):
+    def __init__(self, ds_path, length):
         self.token_tracks_ds, self.tracks_length, self.Y = torch.load(ds_path)
         self.size = len(self.tracks_length)
         self.output_units = self.Y.max()
@@ -17,7 +17,7 @@ class FMATokenDataset(Dataset):
         # Get snippet
         start = random.randint(0, self.tracks_length[item]-self.length)
 
-        token_track = self.token_tracks_ds[item, start:start+self.length]
+        token_track = self.token_tracks_ds[item, start:start+self.length].int()
         Y = self.Y.iloc[item]
         return token_track, Y
 
