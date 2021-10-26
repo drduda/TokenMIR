@@ -10,8 +10,9 @@ class PretrainingSystem(pl.LightningModule):
         :param module: Deep learning module that is pretrained.
         """
         super().__init__()
+        self.save_hyperparameters()
         self.module = module
-        self.masking_percentage = 0.15
+        self.masking_percentage = masking_percentage
 
     def forward(self, x):
         return self.module(x)
