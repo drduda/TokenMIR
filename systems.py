@@ -4,7 +4,7 @@ import torch
 MASK_TOKEN = 2048
 
 class PretrainingSystem(pl.LightningModule):
-    def __init__(self, module, masking_percentage=0.15):
+    def __init__(self, module, masking_percentage):
         """
         The system for autoregressive training with masking.
         :param module: Deep learning module that is pretrained.
@@ -51,8 +51,9 @@ class PretrainingSystem(pl.LightningModule):
 
 
 class ClassificationSystem(pl.LightningModule):
-    def __init__(self, model_path, model):
+    def __init__(self, model_path=None, model=None):
         super().__init__()
+        self.save_hyperparameters()
 
         if model_path:
             self.backbone = PretrainingSystem.load_from_checkpoint(model_path)
