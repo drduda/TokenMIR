@@ -49,3 +49,20 @@ class PretrainingSystem(pl.LightningModule):
         return loss
 
 
+class ClassificationSystem(pl.LightningModule):
+    def __init__(self, model_path, model):
+        super().__init__()
+
+        if model_path:
+            self.backbone = PretrainingSystem.load_from_checkpoint(model_path)
+        else:
+            self.backbone = model
+
+    def configure_optimizers(self):
+        # todo adjust optimizer
+        optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
+        return optimizer
+
+    def forward(self, x):
+        y_hat = self.backbone(x)
+        return y_hat
