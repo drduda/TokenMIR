@@ -7,7 +7,7 @@ class FMATokenDataset(Dataset):
     def __init__(self, ds_path, length):
         self.token_tracks_ds, self.tracks_length, self.Y = torch.load(ds_path)
         self.size = len(self.tracks_length)
-        self.output_units = self.Y.max()
+        self.output_units = self.Y.max() + 1
         self.length = length
 
     def __len__(self):
