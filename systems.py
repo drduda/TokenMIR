@@ -51,7 +51,7 @@ class PretrainingSystem(pl.LightningModule):
 
 
 class ClassificationSystem(pl.LightningModule):
-    def __init__(self, model_path=None, model=None):
+    def __init__(self, output_logits, model_path=None, model=None):
         super().__init__()
         self.save_hyperparameters()
 
@@ -60,11 +60,21 @@ class ClassificationSystem(pl.LightningModule):
         else:
             self.backbone = model
 
+        self.classifier = torch.nn.Sequential(torch.nn.Linear(2048, 200), torch.nn.ReLU(), torch.nn.Linear(200, output_logits))
+
     def configure_optimizers(self):
         # todo adjust optimizer
         optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
         return optimizer
 
     def forward(self, x):
-        y_hat = self.backbone(x)
+        # Only take the first token for classification
+        embedding = self.backbone(x)[:, 0, :]
+        y_hat = self.classifier(embedding)
         return y_hat
+
+    def training_step(self, batch, batch_idx):
+        x, y = batch
+        y_hat = self(x)
+        loss = torch.nn.functional.cross_entropy(y_hat, y.long())
+        return loss
