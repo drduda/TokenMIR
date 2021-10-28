@@ -57,7 +57,7 @@ class MLMSystem(pl.LightningModule):
 
 
 class ClassificationSystem(pl.LightningModule):
-    def __init__(self, output_logits, model_path=None, model=None):
+    def __init__(self, classifier, model_path=None, model=None):
         super().__init__()
         self.save_hyperparameters()
 
@@ -66,7 +66,7 @@ class ClassificationSystem(pl.LightningModule):
         else:
             self.backbone = model
 
-        self.classifier = torch.nn.Sequential(torch.nn.Linear(2048, 200), torch.nn.ReLU(), torch.nn.Linear(200, output_logits))
+        self.classifier = classifier
 
     def configure_optimizers(self):
         # todo adjust optimizer
