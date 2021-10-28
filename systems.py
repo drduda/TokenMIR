@@ -2,20 +2,24 @@ import pytorch_lightning as pl
 import torch
 
 MASK_TOKEN = 2048
+CLS_TOKEN = 2049
 
-class PretrainingSystem(pl.LightningModule):
-    def __init__(self, module, masking_percentage):
+class MLMSystem(pl.LightningModule):
+    def __init__(self, backbone, masking_percentage):
         """
         The system for autoregressive training with masking.
-        :param module: Deep learning module that is pretrained.
+        :param backbone: Deep learning backbone that is pretrained.
         """
         super().__init__()
         self.save_hyperparameters()
-        self.module = module
+        self.backbone = backbone
         self.masking_percentage = masking_percentage
 
     def forward(self, x):
-        return self.module(x)
+        # First token is CLS_TOKEN
+        x[:, 0] = CLS_TOKEN
+
+        return self.backbone(x)
 
     def training_step(self, batch, batch_idx):
         # Actual labels are discarded
@@ -25,6 +29,8 @@ class PretrainingSystem(pl.LightningModule):
         # Mask the input
         rand = torch.rand(x.shape)
         mask_arr = rand < self.masking_percentage
+        # CLS_TOKEN should not be masked
+        mask_arr[:, 0] = False
         x[mask_arr] = MASK_TOKEN
 
         y_hat = self(x)
@@ -56,7 +62,7 @@ class ClassificationSystem(pl.LightningModule):
         self.save_hyperparameters()
 
         if model_path:
-            self.backbone = PretrainingSystem.load_from_checkpoint(model_path)
+            self.backbone = MLMSystem.load_from_checkpoint(model_path)
         else:
             self.backbone = model
 
@@ -68,6 +74,9 @@ class ClassificationSystem(pl.LightningModule):
         return optimizer
 
     def forward(self, x):
+        # First token is CLS_TOKEN
+        x[:, 0] = CLS_TOKEN
+
         # Only take the first token for classification
         embedding = self.backbone(x)[:, 0, :]
         y_hat = self.classifier(embedding)
