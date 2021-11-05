@@ -22,6 +22,7 @@ class MLMSystem(pl.LightningModule):
         return self.backbone(x)
 
     def training_step(self, batch, batch_idx):
+        #todo adjust for new api of archtitecture
         # Actual labels are discarded
         x, _ = batch
         y = x.detach().clone()
@@ -49,6 +50,7 @@ class MLMSystem(pl.LightningModule):
         mask_arr = torch.flatten(mask_arr, end_dim=1)
         y = torch.flatten(y).long()
 
+        #todo is the loss correct
         loss = torch.nn.functional.cross_entropy(y_hat, y, reduction="none")
 
         # Only the masked tokens are important for the loss
@@ -57,16 +59,15 @@ class MLMSystem(pl.LightningModule):
 
 
 class ClassificationSystem(pl.LightningModule):
-    def __init__(self, classifier, model_path=None, model=None):
+    def __init__(self, model_path=None, model=None):
         super().__init__()
         self.save_hyperparameters()
 
         if model_path:
-            self.backbone = MLMSystem.load_from_checkpoint(model_path)
+            self.BERT = MLMSystem.load_from_checkpoint(model_path)
         else:
-            self.backbone = model
+            self.BERT = model
 
-        self.classifier = classifier
 
     def configure_optimizers(self):
         # todo adjust optimizer
@@ -77,10 +78,8 @@ class ClassificationSystem(pl.LightningModule):
         # First token is CLS_TOKEN
         x[:, 0] = CLS_TOKEN
 
-        # Only take the first token for classification
-        embedding = self.backbone(x)[:, 0, :]
-        y_hat = self.classifier(embedding)
-        return y_hat
+        y_cls, _y_mlm = self.BERT(x)
+        return y_cls
 
     def training_step(self, batch, batch_idx):
         x, y = batch
