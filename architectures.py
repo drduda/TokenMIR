@@ -49,6 +49,9 @@ class PositionalEncoding(nn.Module):
         return self.dropout(x)
 
 class BERTWithEmbedding(BERT):
+    """
+    BERT with token input
+    """
     def __init__(self, d_model, n_head, dim_feed, dropout, layers, max_len, output_units):
         super().__init__(d_model, n_head, dim_feed, dropout, layers, max_len, output_units)
 
@@ -56,3 +59,15 @@ class BERTWithEmbedding(BERT):
 
     def forward(self, x):
         return super().forward(self.embedding(x))
+
+class BERTWithoutEmbedding(BERT):
+    """
+    With linear projection (described by MusiCoder in section 3.1)
+    """
+    def __init__(self, d_model, n_head, dim_feed, dropout, layers, max_len, output_units, input_units):
+        super().__init__(d_model, n_head, dim_feed, dropout, layers, max_len, output_units)
+
+        self.projection = nn.Linear(input_units, d_model)
+
+    def forward(self, x):
+        return super().forward(self.projection(x))
