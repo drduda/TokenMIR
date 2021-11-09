@@ -29,7 +29,7 @@ class BERT(nn.Module):
         return y_cls, y_mlm
 
 class PositionalEncoding(nn.Module):
-    def __init__(self, d_model: int, dropout: float = 0.1, max_len: int = 5000):
+    def __init__(self, d_model: int, dropout, max_len):
         super().__init__()
         self.dropout = nn.Dropout(p=dropout)
 
@@ -43,9 +43,9 @@ class PositionalEncoding(nn.Module):
     def forward(self, x: Tensor) -> Tensor:
         """
         Args:
-            x: Tensor, shape [seq_len, batch_size, embedding_dim]
+            x: Tensor, shape [batch_size, seq_len, embedding_dim]
         """
-        x = x + self.pe[:x.size(0)]
+        x = x + self.pe
         return self.dropout(x)
 
 class BERTWithEmbedding(BERT):
