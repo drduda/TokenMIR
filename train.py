@@ -5,7 +5,7 @@ from systems import MLMSystem, ClassificationSystem
 import architectures
 
 
-def classify(ds_path, batch_size, epochs, d_model, n_head, dim_feed, dropout, layers, token_sequence_length=1024):
+def classify(ds_path, batch_size, epochs, d_model, n_head, dim_feed, dropout, layers, gpus=-1, precision=32, token_sequence_length=1024):
     assert d_model % n_head == 0
 
     data_module = FMATokenDataModule(ds_path, batch_size, token_sequence_length)
@@ -17,7 +17,7 @@ def classify(ds_path, batch_size, epochs, d_model, n_head, dim_feed, dropout, la
 
     mir_system = ClassificationSystem(model=model)
     trainer = pl.Trainer(
-        max_epochs=epochs, progress_bar_refresh_rate=20, weights_summary='full')
+        max_epochs=epochs, progress_bar_refresh_rate=20, weights_summary='full', gpus=gpus, precision=precision)
     trainer.fit(mir_system, data_module)
 
 
