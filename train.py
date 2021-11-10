@@ -13,7 +13,7 @@ def classify(ds_path, batch_size, epochs, d_model, n_head, dim_feed, dropout, la
 
     model = architectures.BERTWithEmbedding(
         d_model=d_model, n_head=n_head, dim_feed=dim_feed, dropout=dropout, layers=layers,
-        max_len=token_sequence_length, output_units=data_module.output_units)
+        max_len=token_sequence_length, output_units=16)
 
     mir_system = ClassificationSystem(model=model)
     trainer = pl.Trainer(
