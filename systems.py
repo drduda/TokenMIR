@@ -105,7 +105,7 @@ class ClassificationSystem(pl.LightningModule):
         total = len(y)
 
         # calculating the loss
-        train_loss = torch.nn.functional.cross_entropy(y_hat, y.long(), weight=self.target_dist)
+        train_loss = torch.nn.functional.cross_entropy(y_hat, y.long(), weight=self.target_dist.type_as(y_hat))
 
         # logs- a dictionary
         logs = {"train_loss": train_loss}
