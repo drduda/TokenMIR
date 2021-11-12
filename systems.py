@@ -4,6 +4,7 @@ import torch
 MASK_TOKEN = 2048
 CLS_TOKEN = 2049
 
+
 class MLMSystem(pl.LightningModule):
     def __init__(self, backbone, masking_percentage):
         """
@@ -96,24 +97,94 @@ class ClassificationSystem(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         x, y = batch
         y_hat, _ = self(x)
-        acc = self.accuracy(y_hat, y)
-        loss = torch.nn.functional.cross_entropy(y_hat, y.long())
+        # identifying number of correct predections in a given batch
+        correct = y_hat.argmax(dim=1).eq(y).sum().item()
 
-        self.log('train_loss', loss, prog_bar=True)
-        self.log('train_acc', acc, prog_bar=True)
+        # identifying total number of labels in a given batch
+        total = len(y)
 
-        return loss
+        # calculating the loss
+        train_loss = torch.nn.functional.cross_entropy(y_hat, y.long())
+
+        # logs- a dictionary
+        logs = {"train_loss": train_loss}
+
+        batch_dictionary = {
+            # REQUIRED: It ie required for us to return "loss"
+            "loss": train_loss,
+
+            # optional for batch logging purposes
+            "log": logs,
+
+            # info to be used at epoch end
+            "correct": correct,
+            "total": total
+        }
+
+        return batch_dictionary
+
+    def training_epoch_end(self, outputs):
+        #  the function is called after every epoch is completed
+        # calculating average loss
+        avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
+
+        # calculating correect and total predictions
+        correct = sum([x["correct"] for x in outputs])
+        total = sum([x["total"] for x in outputs])
+
+        # logging using tensorboard logger
+        self.logger.experiment.add_scalar("Loss/Train",
+                                          avg_loss,
+                                          self.current_epoch)
+
+        self.logger.experiment.add_scalar("Accuracy/Train",
+                                          correct / total,
+                                          self.current_epoch)
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
         y_hat, _ = self(x)
-        acc = self.accuracy(y_hat, y)
-        loss = torch.nn.functional.cross_entropy(y_hat, y.long())
 
-        self.log('val_loss', loss, prog_bar=True)
-        self.log('val_acc', acc, prog_bar=True)
+        # identifying number of correct predections in a given batch
+        correct = y_hat.argmax(dim=1).eq(y).sum().item()
 
-        return loss
+        # identifying total number of labels in a given batch
+        total = len(y)
+
+        # calculating the loss
+        train_loss = torch.nn.functional.cross_entropy(y_hat, y.long())
+
+        # logs- a dictionary
+        logs = {"train_loss": train_loss}
+
+        batch_dictionary = {
+            # REQUIRED: It ie required for us to return "loss"
+            "loss": train_loss,
+            # optional for batch logging purposes
+            "log": logs,
+            # info to be used at epoch end
+            "correct": correct,
+            "total": total
+        }
+        return batch_dictionary
+
+    def validation_epoch_end(self, outputs):
+        #  the function is called after every epoch is completed
+        # calculating average loss
+        avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
+
+        # calculating correect and total predictions
+        correct = sum([x["correct"] for x in outputs])
+        total = sum([x["total"] for x in outputs])
+
+        # logging using tensorboard logger
+        self.logger.experiment.add_scalar("Loss/Val",
+                                          avg_loss,
+                                          self.current_epoch)
+
+        self.logger.experiment.add_scalar("Accuracy/Val",
+                                          correct / total,
+                                          self.current_epoch)
 
     @staticmethod
     def accuracy(y_hat, y):
