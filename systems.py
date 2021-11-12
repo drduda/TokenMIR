@@ -60,10 +60,11 @@ class MLMSystem(pl.LightningModule):
 
 
 class ClassificationSystem(pl.LightningModule):
-    def __init__(self, model_path=None, model=None):
+    def __init__(self, model_path=None, model=None, target_dist=None):
         super().__init__()
         self.save_hyperparameters()
         self.warmup_steps = 8000
+        self.target_dist = target_dist
 
         if model_path:
             self.BERT = MLMSystem.load_from_checkpoint(model_path)
@@ -104,7 +105,7 @@ class ClassificationSystem(pl.LightningModule):
         total = len(y)
 
         # calculating the loss
-        train_loss = torch.nn.functional.cross_entropy(y_hat, y.long())
+        train_loss = torch.nn.functional.cross_entropy(y_hat, y.long(), weight=self.target_dist)
 
         # logs- a dictionary
         logs = {"train_loss": train_loss}

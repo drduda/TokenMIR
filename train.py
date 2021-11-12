@@ -16,7 +16,7 @@ def classify(ds_path, batch_size, epochs, d_model, n_head, dim_feed, dropout, la
         d_model=d_model, n_head=n_head, dim_feed=dim_feed, dropout=dropout, layers=layers,
         max_len=token_sequence_length, output_units=16)
 
-    mir_system = ClassificationSystem(model=model)
+    mir_system = ClassificationSystem(model=model, target_dist=data_module.target_distribution())
     trainer = pl.Trainer(logger=logger,
         max_epochs=epochs, progress_bar_refresh_rate=20, weights_summary='full', gpus=gpus, precision=precision)
     trainer.fit(mir_system, data_module)
