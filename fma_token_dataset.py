@@ -35,9 +35,13 @@ class FMATokenDataModule(pl.LightningDataModule):
         self.batch_size = batch_size
         self.token_length = token_length
 
-    def setup(self, stage: Optional[str] = None) -> None:
+    def setup(self, stage: Optional[str] = None):
         train_path = os.path.join(self.data_dir, "tokens_ds_size_medium_split_training.pt")
         self.train_ds = FMATokenDataset(train_path, self.token_length)
+
+        self.target_distribution = self.train_ds.Y.value_counts().sort_index()
+        #Normalize
+        self.target_distribution = torch.Tensor(self.target_distribution.values / len(self.train_ds))
 
         val_path = os.path.join(self.data_dir, "tokens_ds_size_medium_split_validation.pt")
         self.val_ds = FMATokenDataset(val_path, self.token_length)
