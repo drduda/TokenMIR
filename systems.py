@@ -96,5 +96,27 @@ class ClassificationSystem(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         x, y = batch
         y_hat, _ = self(x)
+        acc = self.accuracy(y_hat, y)
         loss = torch.nn.functional.cross_entropy(y_hat, y.long())
+
+        self.log('train_loss', loss, prog_bar=True)
+        self.log('train_acc', acc, prog_bar=True)
+
         return loss
+
+    def validation_step(self, batch, batch_idx):
+        x, y = batch
+        y_hat, _ = self(x)
+        acc = self.accuracy(y_hat, y)
+        loss = torch.nn.functional.cross_entropy(y_hat, y.long())
+
+        self.log('val_loss', loss, prog_bar=True)
+        self.log('val_acc', acc, prog_bar=True)
+
+        return loss
+
+    @staticmethod
+    def accuracy(y_hat, y):
+        pred = torch.max(y_hat, dim=1).indices
+        acc = torch.sum(pred == y).item()/len(y)
+        return acc
