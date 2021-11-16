@@ -37,12 +37,18 @@ class FMATokenDataModule(pl.LightningDataModule):
 
     def target_distribution(self):
         train_path = os.path.join(self.data_dir, "tokens_ds_size_medium_split_training.pt")
-        self.train_ds = FMATokenDataset(train_path, self.token_length)
+        train_ds = FMATokenDataset(train_path, self.token_length)
 
-        target_distribution = self.train_ds.Y.value_counts().sort_index()
+        target_distribution = train_ds.Y.value_counts().sort_index()
         # Normalize
-        target_distribution = torch.Tensor(target_distribution.values / len(self.train_ds))
-        return target_distribution
+        target_distribution = torch.Tensor(target_distribution.values / len(train_ds))
+
+        assert torch.sum(target_distribution).item() == 1
+
+        # Inverse distribtion
+        num_classes = train_ds.output_units
+        inverse_target_distribution = (1/target_distribution)/num_classes
+        return inverse_target_distribution
 
     def setup(self, stage: Optional[str] = None):
         train_path = os.path.join(self.data_dir, "tokens_ds_size_medium_split_training.pt")
