@@ -55,7 +55,7 @@ class FMATokenDataModule(pl.LightningDataModule):
         self.test_ds = FMATokenDataset(test_path, self.token_length)
 
     def train_dataloader(self):
-        return DataLoader(self.train_ds, batch_size=self.batch_size)
+        return DataLoader(self.train_ds, batch_size=self.batch_size, shuffle=True)
 
     def val_dataloader(self):
         return DataLoader(self.val_ds, batch_size=self.batch_size)
