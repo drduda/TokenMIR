@@ -1,5 +1,9 @@
 import pytorch_lightning as pl
 import torch
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
+import torchmetrics
 
 MASK_TOKEN = 2048
 CLS_TOKEN = 2049
@@ -98,97 +102,38 @@ class ClassificationSystem(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         x, y = batch
         y_hat, _ = self(x)
-        # identifying number of correct predections in a given batch
-        correct = y_hat.argmax(dim=1).eq(y).sum().item()
-
-        # identifying total number of labels in a given batch
-        total = len(y)
-
-        # calculating the loss
-        train_loss = torch.nn.functional.cross_entropy(y_hat, y.long(), weight=self.target_dist.type_as(y_hat))
-
-        # logs- a dictionary
-        logs = {"train_loss": train_loss}
-
-        batch_dictionary = {
-            # REQUIRED: It ie required for us to return "loss"
-            "loss": train_loss,
-
-            # optional for batch logging purposes
-            "log": logs,
-
-            # info to be used at epoch end
-            "correct": correct,
-            "total": total
-        }
-
-        return batch_dictionary
-
-    def training_epoch_end(self, outputs):
-        #  the function is called after every epoch is completed
-        # calculating average loss
-        avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
-
-        # calculating correect and total predictions
-        correct = sum([x["correct"] for x in outputs])
-        total = sum([x["total"] for x in outputs])
-
-        # logging using tensorboard logger
-        self.logger.experiment.add_scalar("Loss/Train",
-                                          avg_loss,
-                                          self.current_epoch)
-
-        self.logger.experiment.add_scalar("Accuracy/Train",
-                                          correct / total,
-                                          self.current_epoch)
+        loss = torch.nn.functional.cross_entropy(y_hat, y.long(), weight=self.target_dist.type_as(y_hat))
+        return {'loss': loss, 'preds': y_hat, 'target': y}
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
         y_hat, _ = self(x)
+        loss = torch.nn.functional.cross_entropy(y_hat, y.long(), weight=self.target_dist.type_as(y_hat))
+        return {'loss': loss, 'preds': y_hat, 'target': y}
 
-        # identifying number of correct predections in a given batch
-        correct = y_hat.argmax(dim=1).eq(y).sum().item()
+    def _at_epoch_end(self, outputs, stage=None):
+        preds = torch.cat([tmp['preds'] for tmp in outputs])
+        targets = torch.cat([tmp['target'] for tmp in outputs])
+        loss = torch.Tensor([tmp['loss'] for tmp in outputs])
 
-        # identifying total number of labels in a given batch
-        total = len(y)
+        loss = torch.mean(loss).item()
+        self.logger.experiment.add_scalar("Loss/%s" % stage, loss, self.current_epoch)
 
-        # calculating the loss
-        train_loss = torch.nn.functional.cross_entropy(y_hat, y.long())
+        acc = torchmetrics.functional.classification.accuracy(preds, targets)
+        self.logger.experiment.add_scalar("Accuracy/%s" % stage, acc, self.current_epoch)
 
-        # logs- a dictionary
-        logs = {"train_loss": train_loss}
+        num_classes = self.BERT.output_units
+        confusion_matrix = torchmetrics.functional.confusion_matrix(preds, targets, num_classes=num_classes)
 
-        batch_dictionary = {
-            # REQUIRED: It ie required for us to return "loss"
-            "loss": train_loss,
-            # optional for batch logging purposes
-            "log": logs,
-            # info to be used at epoch end
-            "correct": correct,
-            "total": total
-        }
-        return batch_dictionary
+        # Plot confusion matrix
+        df_cm = pd.DataFrame(confusion_matrix.numpy(), index=range(num_classes), columns=range(num_classes))
+        plt.figure(figsize=(10, 7))
+        fig_ = sns.heatmap(df_cm, annot=True, cmap='Spectral', fmt='g').get_figure()
+        plt.close(fig_)
+        self.logger.experiment.add_figure("Confusion matrix/%s" % stage, fig_, self.current_epoch)
+
+    def training_epoch_end(self, outputs):
+        self._at_epoch_end(outputs, 'Train')
 
     def validation_epoch_end(self, outputs):
-        #  the function is called after every epoch is completed
-        # calculating average loss
-        avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
-
-        # calculating correect and total predictions
-        correct = sum([x["correct"] for x in outputs])
-        total = sum([x["total"] for x in outputs])
-
-        # logging using tensorboard logger
-        self.logger.experiment.add_scalar("Loss/Val",
-                                          avg_loss,
-                                          self.current_epoch)
-
-        self.logger.experiment.add_scalar("Accuracy/Val",
-                                          correct / total,
-                                          self.current_epoch)
-
-    @staticmethod
-    def accuracy(y_hat, y):
-        pred = torch.max(y_hat, dim=1).indices
-        acc = torch.sum(pred == y).item()/len(y)
-        return acc
+        self._at_epoch_end(outputs, 'Val')
