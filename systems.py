@@ -127,7 +127,7 @@ class ClassificationSystem(pl.LightningModule):
         confusion_matrix = torchmetrics.functional.confusion_matrix(preds, targets, num_classes=num_classes)
 
         # Plot confusion matrix
-        df_cm = pd.DataFrame(confusion_matrix.numpy(), index=range(num_classes), columns=range(num_classes))
+        df_cm = pd.DataFrame(confusion_matrix.cpu().numpy(), index=range(num_classes), columns=range(num_classes))
         plt.figure(figsize=(10, 7))
         fig_ = sns.heatmap(df_cm, annot=True, cmap='Spectral', fmt='g').get_figure()
         plt.close(fig_)
