@@ -119,10 +119,11 @@ class ClassificationSystem(pl.LightningModule):
         loss = torch.mean(loss).item()
         self.logger.experiment.add_scalar("Loss/%s" % stage, loss, self.current_epoch)
 
-        f1 = torchmetrics.functional.classification.f1(preds, targets, average='macro')
+        num_classes = self.BERT.output_units
+
+        f1 = torchmetrics.functional.classification.f1(preds, targets, average='macro', num_classes=num_classes)
         self.logger.experiment.add_scalar("F1_macro/%s" % stage, f1, self.current_epoch)
 
-        num_classes = self.BERT.output_units
         confusion_matrix = torchmetrics.functional.confusion_matrix(preds, targets, num_classes=num_classes)
 
         # Plot confusion matrix
