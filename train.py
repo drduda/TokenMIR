@@ -9,11 +9,13 @@ from spectrograms.data import FmaSpectrogramGenreDataModule
 def classify_from_spectograms(fma_dir, batch_size, epochs, d_model, n_head, dim_feed, dropout, layers, gpus=-1, precision=32,
              name="default"):
     assert d_model % n_head == 0
-    data_module =FmaSpectrogramGenreDataModule(fma_dir)
+    # Most values are taken from librosa.stft
+    data_module =FmaSpectrogramGenreDataModule(
+        fma_dir, "medium", n_fft=2048, hop_length=5000, sr=44100, batch_size=batch_size, file_ext=".mp3")
     logger = TensorBoardLogger("tb_log", name="specto/%s" % name)
     model = architectures.BERTWithoutEmbedding(
         d_model=d_model, n_head=n_head, dim_feed=dim_feed, dropout=dropout, layers=layers,
-        max_len=?, output_units=16, input_units=)
+        max_len=500, output_units=16, input_units=100)
     import torch
     mir_system = ClassificationSystem(model=model, target_dist=torch.ones(16))
     trainer = pl.Trainer(logger=logger,
