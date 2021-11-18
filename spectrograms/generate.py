@@ -1,20 +1,19 @@
 import os
-from fma import utils as fma_utils
 import tqdm
-from spectrograms.spectrogram_utils import save_spec, gen_spec
+from spectrograms.spectrogram_utils import save_spec, gen_spec, load, get_audio_path
 
 
 def generate_spectrograms(fma_dir, output_dir, subset="small", n_fft=2048, hop_length=512, logger=None):
     audio_dir = os.path.join(fma_dir, f"fma_{subset}")
     metadata_path = os.path.join(fma_dir, 'fma_metadata/tracks.csv')
-    tracks = fma_utils.load(metadata_path)
+    tracks = load(metadata_path)
     tracks = tracks[tracks['set', 'subset'] <= subset]
 
     if logger is not None:
         logger.info(f"Generating spectrograms from directory {audio_dir} for {subset} subset.")
 
     for track_id, track in tqdm.tqdm(tracks.iterrows()):
-        filename = f"{os.path.splitext(fma_utils.get_audio_path(audio_dir, track_id))[0]}.wav"
+        filename = f"{os.path.splitext(get_audio_path(audio_dir, track_id))[0]}.wav"
         logger.debug('File to load: {}'.format(filename))
 
         try:

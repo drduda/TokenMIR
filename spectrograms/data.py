@@ -10,9 +10,7 @@ import librosa
 import numpy as np
 import pytorch_lightning as pl
 
-from fma import utils as fma_utils
-
-from spectrograms.spectrogram_utils import gen_spec
+from spectrograms.spectrogram_utils import gen_spec, get_audio_path, load
 
 
 class SpectrogramDataset(Dataset):
@@ -62,7 +60,7 @@ class SpectrogramDataset(Dataset):
         return mel, y
 
     def get_filename_for_track_id(self, track_id):
-        return f"{os.path.splitext(fma_utils.get_audio_path(self.audio_dir, track_id))[0]}{self.file_ext}"
+        return f"{os.path.splitext(get_audio_path(self.audio_dir, track_id))[0]}{self.file_ext}"
 
 
 class FmaSpectrogramGenreDataModule(pl.LightningDataModule):
@@ -85,7 +83,7 @@ class FmaSpectrogramGenreDataModule(pl.LightningDataModule):
         extended_metadata_path = os.path.join(self.data_dir, f"fma_metadata/tracks_ext_{self.subset}_genre-top.csv")
         if os.path.isfile(extended_metadata_path):
             print(f"INFO: Loading extended metadata from {extended_metadata_path}")
-            self.tracks = fma_utils.load(extended_metadata_path)
+            self.tracks = load(extended_metadata_path)
         else:
             print(f"INFO: No extended metadata found in path {extended_metadata_path}. Generating now...")
             self.tracks = self.build_extended_metadata(extended_metadata_path)
@@ -157,7 +155,7 @@ class FmaSpectrogramGenreDataModule(pl.LightningDataModule):
         return DataLoader(self.spec_ds_test, batch_size=self.batch_size, shuffle=False)
 
     def get_clip_duration(self, x):
-        fn = f"{os.path.splitext(fma_utils.get_audio_path(self.audio_dir, x['track_id'].values[0]))[0]}{self.file_ext}"
+        fn = f"{os.path.splitext(get_audio_path(self.audio_dir, x['track_id'].values[0]))[0]}{self.file_ext}"
         try:
             y, r = librosa.load(fn, sr=self.sr)
             x['track', 'clip_duration'] = librosa.get_duration(y, sr=r)
@@ -174,7 +172,7 @@ class FmaSpectrogramGenreDataModule(pl.LightningDataModule):
     def build_extended_metadata(self, path):
         tqdm.tqdm.pandas()
 
-        tracks = fma_utils.load(os.path.join(self.data_dir, 'fma_metadata/tracks.csv'))
+        tracks = load(os.path.join(self.data_dir, 'fma_metadata/tracks.csv'))
         tracks = tracks[tracks['set', 'subset'] <= self.subset]
 
         tracks = tracks.dropna(subset=[('track', 'genre_top')])
@@ -228,4 +226,4 @@ class FmaSpectrogramGenreDataModule(pl.LightningDataModule):
         tracks.set_index('track_id', inplace=True)
 
     def get_filename_for_track_id(self, track_id):
-        return f"{os.path.splitext(fma_utils.get_audio_path(self.audio_dir, track_id))[0]}{self.file_ext}"
+        return f"{os.path.splitext(get_audio_path(self.audio_dir, track_id))[0]}{self.file_ext}"
