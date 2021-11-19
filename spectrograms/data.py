@@ -1,5 +1,5 @@
 import os
-from typing import Optional, Union, List, Dict
+from typing import Optional, Union, List
 
 import torch
 import tqdm

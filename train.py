@@ -6,13 +6,14 @@ import architectures
 from pytorch_lightning.loggers import TensorBoardLogger
 from spectrograms.data import FmaSpectrogramGenreDataModule
 
-def classify_from_spectograms(fma_dir, batch_size, epochs, d_model, n_head, dim_feed, dropout, layers, gpus=-1, precision=32,
+
+def classify_from_spectrograms(fma_dir, batch_size, epochs, d_model, n_head, dim_feed, dropout, layers, gpus=-1, precision=32,
              name="default"):
     assert d_model % n_head == 0
     # Most values are taken from librosa.stft
     data_module =FmaSpectrogramGenreDataModule(
         fma_dir, "medium", n_fft=2048, hop_length=5000, sr=44100, batch_size=batch_size, file_ext=".mp3")
-    logger = TensorBoardLogger("tb_log", name="specto/%s" % name)
+    logger = TensorBoardLogger("tb_log", name="spectro/%s" % name)
     model = architectures.BERTWithoutEmbedding(
         d_model=d_model, n_head=n_head, dim_feed=dim_feed, dropout=dropout, layers=layers,
         max_len=500, output_units=16, input_units=100)
@@ -22,6 +23,7 @@ def classify_from_spectograms(fma_dir, batch_size, epochs, d_model, n_head, dim_
                          max_epochs=epochs, progress_bar_refresh_rate=20, weights_summary='full', gpus=gpus,
                          precision=precision)
     trainer.fit(mir_system, data_module)
+
 
 def classify_from_tokens(ds_path, batch_size, epochs, d_model, n_head, dim_feed, dropout, layers, gpus=-1, precision=32,
              token_sequence_length=1024, name="default"):

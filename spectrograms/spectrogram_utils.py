@@ -5,6 +5,7 @@ import os
 import pandas as pd
 import ast
 
+
 def load(filepath):
 
     filename = os.path.basename(filepath)
@@ -50,6 +51,7 @@ def load(filepath):
 
         return tracks
 
+
 def get_audio_path(audio_dir, track_id):
     """
     Return the path to the mp3 given the directory where the audio is stored
@@ -63,6 +65,7 @@ def get_audio_path(audio_dir, track_id):
     """
     tid_str = '{:06d}'.format(track_id)
     return os.path.join(audio_dir, tid_str[:3], tid_str + '.mp3')
+
 
 def save_spec(filename, spec, meta_data={}):
     if type(spec) == np.ndarray:
