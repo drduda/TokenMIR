@@ -12,6 +12,7 @@ from scipy.stats import zscore
 import pandas as pd
 
 from spectrograms import spectrogram_utils as spec_utils
+from tokenmir_datamodule import TokenMIRDataModule
 
 
 class SpectrogramDataset(Dataset):
@@ -128,7 +129,7 @@ class SpectrogramDataset(Dataset):
         return spec[t1:t2, :]
 
 
-class FmaSpectrogramGenreDataModule(pl.LightningDataModule):
+class FmaSpectrogramGenreDataModule(TokenMIRDataModule):
     """
     class lightning datamodule that converts fma data into spectrograms and provides the spectrograms as a dataset
     """
@@ -358,3 +359,14 @@ class FmaSpectrogramGenreDataModule(pl.LightningDataModule):
         :param track_id: Track ID.
         """
         return f"{os.path.splitext(spec_utils.get_audio_path(self.audio_dir, track_id))[0]}{self.file_ext}"
+
+    def get_target_distribution_weights(self):
+        target_distribution = self.tracks['track', 'genre_top_id'].value_counts().sort_index()
+        # Normalize distribution
+        target_distribution = torch.Tensor(target_distribution.values) / len(self.tracks)
+
+        assert torch.sum(target_distribution) == 1
+
+        # Inverse distribution
+        inverse_target_distribution = (1/target_distribution)/self.num_classes
+        return inverse_target_distribution
