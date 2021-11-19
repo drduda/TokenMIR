@@ -19,7 +19,7 @@ class SpectrogramDataset(Dataset):
     Dataset converting fma audio files to spectrograms.
     """
 
-    def __init__(self, fma_dir, subset, n_fft, hop_length, sr, tracks, num_classes, n_frames=2582, n_mels=128, file_ext=".wav", save_specs=False, save_specs_dir="", from_scratch=False):
+    def __init__(self, fma_dir, subset, n_fft, hop_length, sr, tracks, num_classes, n_frames=2582, n_mels=128, file_ext=".wav", save_specs=False, save_specs_dir="", from_scratch=False, snippet_length=None):
         """
         Constructor
         :param fma_dir: Path to the fma directory.
@@ -51,6 +51,9 @@ class SpectrogramDataset(Dataset):
         self.save_specs = save_specs
         self.save_specs_dir = save_specs_dir
         self.from_scratch = from_scratch
+        self.snippet_length = snippet_length
+
+        assert self.snippet_length <= self.n_frames
 
         if self.save_specs_dir == "":
             self.save_specs_dir = os.path.join(self.fma_dir, "spectrograms")
@@ -79,12 +82,12 @@ class SpectrogramDataset(Dataset):
 
             assert spec.shape == (self.n_frames, self.n_mels)
 
-            return spec, y
+            return self.cut_random_snippet(spec), y
 
         # otherwise generate spectrograms
 
         filename = self.get_filename_for_track_id(track['track_id'].values[0])
-        spec, sr = gen_spec(filename, self.n_fft, self.hop_length, self.sr, self.n_mels)
+        spec, sr = spec_utils.gen_spec(filename, self.n_fft, self.hop_length, self.sr, self.n_mels)
 
         if sr != self.sr:
             raise ValueError("The output sampling rate does not match the requested one.")
@@ -109,7 +112,7 @@ class SpectrogramDataset(Dataset):
 
         assert spec.shape == (self.n_frames, self.n_mels)
 
-        return spec, y
+        return self.cut_random_snippet(spec), y
 
     def get_filename_for_track_id(self, track_id: int) -> str:
         """
@@ -119,13 +122,18 @@ class SpectrogramDataset(Dataset):
         """
         return f"{os.path.splitext(spec_utils.get_audio_path(self.audio_dir, track_id))[0]}{self.file_ext}"
 
+    def cut_random_snippet(self, spec):
+        t1 = np.random.randint(0, spec.shape[0] - self.snippet_length)
+        t2 = t1 + self.snippet_length
+        return spec[t1:t2, :]
+
 
 class FmaSpectrogramGenreDataModule(pl.LightningDataModule):
     """
     class lightning datamodule that converts fma data into spectrograms and provides the spectrograms as a dataset
     """
 
-    def __init__(self, fma_dir: str, subset: str, n_fft: int, hop_length: int, sr: int, n_mels: int = 128, batch_size: int = 32, file_ext: str = ".wav", save_specs: bool = False, save_specs_dir: str = "", from_scratch: bool = False):
+    def __init__(self, fma_dir: str, subset: str, n_fft: int, hop_length: int, sr: int, n_mels: int = 128, batch_size: int = 32, file_ext: str = ".wav", save_specs: bool = False, save_specs_dir: str = "", from_scratch: bool = False, snippet_length: int = None):
         """
         Constructor
         :param fma_dir: Path to the FMA dataset.
@@ -153,6 +161,7 @@ class FmaSpectrogramGenreDataModule(pl.LightningDataModule):
         self.save_specs = save_specs
         self.save_specs_dir = save_specs_dir
         self.from_scratch = from_scratch
+        self.snippet_length = snippet_length
 
         if self.save_specs_dir == "":
             self.save_specs_dir = os.path.join(self.data_dir, "spectrograms")
@@ -194,7 +203,8 @@ class FmaSpectrogramGenreDataModule(pl.LightningDataModule):
                 self.n_mels,
                 save_specs=self.save_specs,
                 save_specs_dir=self.save_specs_dir,
-                from_scratch=self.from_scratch
+                from_scratch=self.from_scratch,
+                snippet_length=self.snippet_length
             )
 
             val_tracks = self.tracks[self.tracks['set', 'split'] == 'validation'].copy().reset_index()
@@ -211,7 +221,8 @@ class FmaSpectrogramGenreDataModule(pl.LightningDataModule):
                 self.n_mels,
                 save_specs=self.save_specs,
                 save_specs_dir=self.save_specs_dir,
-                from_scratch=self.from_scratch
+                from_scratch=self.from_scratch,
+                snippet_length=self.snippet_length
             )
 
         # Assign test dataset for use in dataloaders
@@ -231,7 +242,8 @@ class FmaSpectrogramGenreDataModule(pl.LightningDataModule):
                 self.n_mels,
                 save_specs=self.save_specs,
                 save_specs_dir=self.save_specs_dir,
-                from_scratch=self.from_scratch
+                from_scratch=self.from_scratch,
+                snippet_length=self.snippet_length
             )
 
     def train_dataloader(self) -> Union[DataLoader, List[DataLoader]]:
