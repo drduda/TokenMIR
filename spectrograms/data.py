@@ -152,6 +152,10 @@ class FmaSpectrogramGenreDataModule(TokenMIRDataModule):
         super(FmaSpectrogramGenreDataModule, self).__init__()
         self.data_dir = fma_dir
         self.audio_dir = os.path.join(self.data_dir, f"fma_{subset}")
+
+        if not os.path.isdir(self.audio_dir):
+            raise FileNotFoundError(f"{self.audio_dir} is not a directory.")
+
         self.subset = subset
         self.n_fft = n_fft
         self.hop_length = hop_length
@@ -265,8 +269,8 @@ class FmaSpectrogramGenreDataModule(TokenMIRDataModule):
         try:
             y, r = librosa.load(fn, sr=self.sr)
             x['track', 'clip_duration'] = librosa.get_duration(y, sr=r)
-        except FileNotFoundError:
-            x['track', 'clip_duraiton'] = np.nan
+        except (FileNotFoundError, RuntimeError):
+            x['track', 'clip_duration'] = np.nan
         return x
 
     def get_expected_frames(self, x: pd.Series) -> pd.Series:
