@@ -1,3 +1,5 @@
+import os.path
+
 import fire
 from fma_token_dataset import FMATokenDataModule
 import pytorch_lightning as pl
@@ -10,6 +12,8 @@ from spectrograms.data import FmaSpectrogramGenreDataModule
 def classify_from_spectrograms(fma_dir, batch_size, epochs, d_model, n_head, dim_feed, dropout, layers, gpus=-1, precision=32,
              name="default"):
     assert d_model % n_head == 0
+    fma_dir = os.path.expanduser(fma_dir)
+
     # Most values are taken from librosa.stft
     data_module =FmaSpectrogramGenreDataModule(
         fma_dir, "small", n_fft=2048, hop_length=512, sr=44100, batch_size=batch_size, file_ext=".mp3", snippet_length=1024)
@@ -28,6 +32,7 @@ def classify_from_spectrograms(fma_dir, batch_size, epochs, d_model, n_head, dim
 def classify_from_tokens(ds_path, batch_size, epochs, d_model, n_head, dim_feed, dropout, layers, gpus=-1, precision=32,
              token_sequence_length=1024, name="default"):
     assert d_model % n_head == 0
+    ds_path = os.path.expanduser(ds_path)
 
     data_module = FMATokenDataModule(ds_path, batch_size, token_sequence_length)
     logger = TensorBoardLogger("tb_log", name="tokens/%s" % name)
