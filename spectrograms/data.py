@@ -313,8 +313,10 @@ class FmaSpectrogramGenreDataModule(TokenMIRDataModule):
             axis=1
         )['track', 'clip_duration']
         tracks.set_index('track_id', inplace=True)
-
-        tracks.dropna([('track', 'clip_duration')])
+        tracks_new = tracks.dropna([('track', 'clip_duration')])
+        print(f"INFO: Removed {len(tracks) - len(tracks_new)} tracks for which no clip duration could be determined.")
+        tracks = tracks_new
+        del tracks_new
 
         # remove rows with clip duration zscore > 3
         tracks['track', 'cd_zscore'] = np.abs(zscore(tracks['track', 'clip_duration']))

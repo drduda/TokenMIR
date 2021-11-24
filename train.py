@@ -11,8 +11,10 @@ def classify_from_spectrograms(fma_dir, batch_size, epochs, d_model, n_head, dim
              name="default"):
     assert d_model % n_head == 0
     # Most values are taken from librosa.stft
-    data_module =FmaSpectrogramGenreDataModule(
-        fma_dir, "small", n_fft=2048, hop_length=512, sr=44100, batch_size=batch_size, file_ext=".mp3", snippet_length=1024)
+    data_module = FmaSpectrogramGenreDataModule(
+        fma_dir, "small", n_fft=2048, hop_length=512, sr=44100, batch_size=batch_size, file_ext=".mp3",
+        snippet_length=1024, save_specs=True
+    )
     logger = TensorBoardLogger("tb_log", name="spectro/%s" % name)
     model = architectures.BERTWithoutEmbedding(
         d_model=d_model, n_head=n_head, dim_feed=dim_feed, dropout=dropout, layers=layers,
