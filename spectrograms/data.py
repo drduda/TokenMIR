@@ -1,6 +1,7 @@
 import os
 from typing import Optional, Union, List, Dict
 
+import audioread.exceptions
 import torch
 import tqdm
 from torch.utils.data import Dataset, DataLoader
@@ -269,7 +270,7 @@ class FmaSpectrogramGenreDataModule(TokenMIRDataModule):
         try:
             y, r = librosa.load(fn, sr=self.sr)
             x['track', 'clip_duration'] = librosa.get_duration(y, sr=r)
-        except (FileNotFoundError, RuntimeError):
+        except (FileNotFoundError, RuntimeError, audioread.exceptions.NoBackendError):
             x['track', 'clip_duration'] = np.nan
         return x
 
@@ -312,6 +313,8 @@ class FmaSpectrogramGenreDataModule(TokenMIRDataModule):
             axis=1
         )['track', 'clip_duration']
         tracks.set_index('track_id', inplace=True)
+
+        tracks.dropna([('track', 'clip_duration')])
 
         # remove rows with clip duration zscore > 3
         tracks['track', 'cd_zscore'] = np.abs(zscore(tracks['track', 'clip_duration']))
