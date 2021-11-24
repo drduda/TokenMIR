@@ -1,14 +1,11 @@
 import os
-from typing import Optional, Union, List, Dict
+from typing import Optional, Union, List
 
-import audioread.exceptions
 import torch
 import tqdm
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.dataset import T_co
-import librosa
 import numpy as np
-import pytorch_lightning as pl
 from scipy.stats import zscore
 import pandas as pd
 
@@ -96,15 +93,13 @@ class SpectrogramDataset(Dataset):
         spec = torch.from_numpy(spec)
 
         # ensure the spectrogram has the correct shape
-        spec = spec[:, :self.n_frames]
-        if spec.shape[1] < self.n_frames:
+        spec = spec[:self.n_frames, :]
+        if spec.shape[0] < self.n_frames:
             # pad with -80 dB
-            spec = torch.cat((spec, torch.full((spec.shape[0], self.n_frames - spec.shape[1]), -80.)), dim=1)
-
-        spec = torch.swapaxes(spec, 0, 1)
+            spec = torch.cat((spec, torch.full((self.n_frames - spec.shape[0], spec.shape[1]), -80.)), dim=0)
 
         y = self.labels[track['track_id']]
-        y = torch.from_numpy(y.values)
+        y = torch.from_numpy(y.values).squeeze()
 
         if self.save_specs:
             if os.access(spec_dir, os.W_OK):
@@ -268,9 +263,10 @@ class FmaSpectrogramGenreDataModule(TokenMIRDataModule):
         """
         fn = f"{os.path.splitext(spec_utils.get_audio_path(self.audio_dir, x['track_id'].values[0]))[0]}{self.file_ext}"
         try:
-            y, r = librosa.load(fn, sr=self.sr)
-            x['track', 'clip_duration'] = librosa.get_duration(y, sr=r)
-        except (FileNotFoundError, RuntimeError, audioread.exceptions.NoBackendError):
+            signal_len = spec_utils.get_signal_len(fn, sr=self.sr)
+            x['track', 'clip_duration'] = signal_len
+        except (FileNotFoundError, RuntimeError):
+            print(f"WARNING: File {fn} could not be loaded. Setting clip duration to NaN.")
             x['track', 'clip_duration'] = np.nan
         return x
 
@@ -313,7 +309,7 @@ class FmaSpectrogramGenreDataModule(TokenMIRDataModule):
             axis=1
         )['track', 'clip_duration']
         tracks.set_index('track_id', inplace=True)
-        tracks_new = tracks.dropna([('track', 'clip_duration')])
+        tracks_new = tracks.dropna(subset=[('track', 'clip_duration')])
         print(f"INFO: Removed {len(tracks) - len(tracks_new)} tracks for which no clip duration could be determined.")
         tracks = tracks_new
         del tracks_new

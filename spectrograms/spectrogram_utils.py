@@ -1,9 +1,9 @@
 import numpy as np
 import torch
-import librosa
 import os
 import pandas as pd
 import ast
+from spectrograms.madmom_spec_utils import signal, melspec_comp
 
 
 def load(filepath):
@@ -87,9 +87,20 @@ def load_spec(filename, logger=None):
     return None
 
 
-def gen_spec(filename, n_fft, hop_length, sr=None, n_mels=128):
-    x, sr = librosa.load(filename, sr=sr, mono=True)
-    stft = np.abs(librosa.stft(x, n_fft=n_fft, hop_length=hop_length))
-    spec = librosa.feature.melspectrogram(sr=sr, S=stft ** 2, n_mels=n_mels)
-    spec = librosa.power_to_db(spec, ref=np.max)
+def gen_spec(filename: str, n_fft: int, hop_length: int, sr: int = None, n_mels: int = 128) -> (np.ndarray, int):
+    """
+    Generate the spectrogram for the audio file.
+    """
+    s = signal(filename, sr, 1)
+    spec = melspec_comp(s, n_fft, hop_length, n_mels)
+    # "convert" to simple numpy array
+    spec = np.copy(spec)
     return spec, sr
+
+
+def get_signal_len(filename: str, sr: int = None) -> float:
+    """
+    Determine the length of the signal in seconds.
+    """
+    s = signal(filename, sr, 1)
+    return len(s) / sr
