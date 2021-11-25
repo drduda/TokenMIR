@@ -205,7 +205,8 @@ class FmaSpectrogramGenreDataModule(TokenMIRDataModule):
                 save_specs=self.save_specs,
                 save_specs_dir=self.save_specs_dir,
                 from_scratch=self.from_scratch,
-                snippet_length=self.snippet_length
+                snippet_length=self.snippet_length,
+                file_ext=self.file_ext
             )
 
             val_tracks = self.tracks[self.tracks['set', 'split'] == 'validation'].copy().reset_index()
@@ -223,7 +224,8 @@ class FmaSpectrogramGenreDataModule(TokenMIRDataModule):
                 save_specs=self.save_specs,
                 save_specs_dir=self.save_specs_dir,
                 from_scratch=self.from_scratch,
-                snippet_length=self.snippet_length
+                snippet_length=self.snippet_length,
+                file_ext=self.file_ext
             )
 
         # Assign test dataset for use in dataloaders
@@ -244,7 +246,8 @@ class FmaSpectrogramGenreDataModule(TokenMIRDataModule):
                 save_specs=self.save_specs,
                 save_specs_dir=self.save_specs_dir,
                 from_scratch=self.from_scratch,
-                snippet_length=self.snippet_length
+                snippet_length=self.snippet_length,
+                file_ext=self.file_ext
             )
 
     def train_dataloader(self) -> Union[DataLoader, List[DataLoader]]:
