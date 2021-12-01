@@ -1,0 +1,86 @@
+---
+jupyter:
+  jupytext:
+    text_representation:
+      extension: .Rmd
+      format_name: rmarkdown
+      format_version: '1.2'
+      jupytext_version: 1.13.1
+  kernelspec:
+    display_name: Python 3 (ipykernel)
+    language: python
+    name: python3
+---
+
+```{python}
+from spectrograms import spectrogram_utils
+from spectrograms.data import FmaSpectrogramGenreDataModule
+import os
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.stats import zscore
+import tqdm
+import librosa.display
+from spectrograms import madmom_spec_utils
+import torch
+```
+
+```{python}
+fma_dir = '/run/media/hdd_linux/hitech-gandalf/ai/data/fma'
+tracks = spectrogram_utils.load(os.path.join(fma_dir, 'fma_metadata/tracks_ext_small_genre-top.csv.bak'))
+tracks = tracks[tracks['set', 'subset'] <= 'small']
+audio_dir = os.path.join(fma_dir, "fma_small")
+sr = 44100
+n_fft = 2048
+hop_length = 512
+n_mels = 128
+```
+
+```{python}
+plt.figure()
+plot = tracks['track', 'clip_duration'].plot.kde()
+plt.axvline(x=tracks['track', 'clip_duration'].mean(), color='red')
+plt.axvline(x=tracks['track', 'clip_duration'].median(), color='green')
+plt.axvline(x=tracks['track', 'clip_duration'].min(), color='blue')
+plt.axvline(x=tracks['track', 'clip_duration'].max(), color='blue')
+plot.set_xlabel("Clip Duration")
+plot.set_title("Clip Duration KDE")
+plt.legend(["Density", "Mean", "Median", "Min/Max"])
+plt.text(30.02, 60, f"n = {len(tracks)}")
+plt.show()
+```
+
+```{python}
+tracks.groupby(('track', 'clip_duration')).size()
+```
+
+```{python}
+plt.figure()
+plot = tracks['track', 'expected_frames'].plot.kde()
+plt.axvline(x=tracks['track', 'expected_frames'].mean(), color='red')
+plt.axvline(x=tracks['track', 'expected_frames'].median(), color='green')
+plt.axvline(x=tracks['track', 'expected_frames'].min(), color='blue')
+plt.axvline(x=tracks['track', 'expected_frames'].max(), color='blue')
+plot.set_xlabel("Expected Frames")
+plot.set_title("Expected Frames KDE")
+plt.legend(["Density", "Mean", "Median", "Min/Max"])
+plt.text(5172.5, .3, f"n = {len(tracks)}")
+plt.show()
+```
+
+```{python}
+s = tracks.reset_index().sample()
+filename = f"{os.path.splitext(spectrogram_utils.get_audio_path(audio_dir, s['track_id'].values[0]))[0]}.wav"
+print(filename)
+spec, y = spectrogram_utils.gen_spec(filename, n_fft, hop_length, sr, n_mels)
+spec = torch.swapaxes(torch.from_numpy(spec), 0, 1).numpy()
+librosa.display.specshow(spec, sr=sr)
+```
+
+```{python}
+mel.shape
+```
+
+```{python}
+
+```
