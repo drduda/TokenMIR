@@ -95,8 +95,8 @@ class SpectrogramDataset(Dataset):
         # ensure the spectrogram has the correct shape
         spec = spec[:self.n_frames, :]
         if spec.shape[0] < self.n_frames:
-            # pad with -80 dB
-            spec = torch.cat((spec, torch.full((self.n_frames - spec.shape[0], spec.shape[1]), -80.)), dim=0)
+            # pad with 0
+            spec = torch.cat((spec, torch.full((self.n_frames - spec.shape[0], spec.shape[1]), 0.)), dim=0)
 
         y = self.labels[track['track_id']]
         y = torch.from_numpy(y.values).squeeze()
