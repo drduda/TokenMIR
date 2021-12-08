@@ -81,6 +81,8 @@ class SpectrogramDataset(Dataset):
 
             assert spec.shape == (self.n_frames, self.n_mels)
 
+            assert torch.isnan(spec).sum() == 0
+
             return self.cut_random_snippet(spec), y
 
         # otherwise generate spectrograms
@@ -108,6 +110,8 @@ class SpectrogramDataset(Dataset):
                 print(f"WARNING: Could not save spectrogram to {spec_dir}. No write permissions.")
 
         assert spec.shape == (self.n_frames, self.n_mels)
+
+        assert torch.isnan(spec).sum() == 0
 
         return self.cut_random_snippet(spec), y
 
