@@ -79,9 +79,11 @@ class SpectrogramDataset(Dataset):
             spec = spec_data['spec']
             y = spec_data['y']
 
-            assert spec.shape == (self.n_frames, self.n_mels)
+            spec = self.cut_random_snippet(spec)
 
-            return self.cut_random_snippet(spec), y
+            assert spec.shape == (self.snippet_length, self.n_mels)
+
+            return spec, y
 
         # otherwise generate spectrograms
 
@@ -93,10 +95,9 @@ class SpectrogramDataset(Dataset):
         spec = torch.from_numpy(spec)
 
         # ensure the spectrogram has the correct shape
-        spec = spec[:self.n_frames, :]
-        if spec.shape[0] < self.n_frames:
+        if spec.shape[0] < self.snippet_length:
             # pad with 0
-            spec = torch.cat((spec, torch.full((self.n_frames - spec.shape[0], spec.shape[1]), 0.)), dim=0)
+            spec = torch.cat((spec, torch.full((self.snippet_length - spec.shape[0], spec.shape[1]), 0.)), dim=0)
 
         y = self.labels[track['track_id']]
         y = torch.from_numpy(y.values).squeeze()
@@ -107,9 +108,11 @@ class SpectrogramDataset(Dataset):
             else:
                 print(f"WARNING: Could not save spectrogram to {spec_dir}. No write permissions.")
 
-        assert spec.shape == (self.n_frames, self.n_mels)
+        spec = self.cut_random_snippet(spec)
 
-        return self.cut_random_snippet(spec), y
+        assert spec.shape == (self.snippet_length, self.n_mels)
+
+        return spec, y
 
     def get_filename_for_track_id(self, track_id: int) -> str:
         """
