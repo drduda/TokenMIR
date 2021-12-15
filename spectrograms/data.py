@@ -71,7 +71,7 @@ class SpectrogramDataset(Dataset):
         spec_dir = os.path.join(self.save_specs_dir, id_str[:3])
         if not os.path.isdir(spec_dir):
             os.makedirs(spec_dir)
-        spec_path = os.path.join(spec_dir, f"{id_str}.spec")
+        spec_path = os.path.join(spec_dir, f"{id_str}_{self.n_fft}_{self.hop_length}_{self.sr}.spec")
 
         # if possible and allowed use pre-generated spectrograms
         if not self.from_scratch and os.path.isfile(spec_path) and os.access(spec_path, os.R_OK):
