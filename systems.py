@@ -9,22 +9,66 @@ MASK_TOKEN = 2048
 CLS_TOKEN = 2049
 
 
+class MySystem(pl.LightningModule):
+    """
+    Superclass for the other systems.
+    """
+    def __init__(self, lr_schedule):
+        super().__init__()
+        self.lr_schedule = lr_schedule
+
+    def forward(self, x):
+        # First token is CLS_TOKEN
+        if x.ndim == 2:
+            x[:, 0] = CLS_TOKEN
+
+        return self.BERT(x)
+
+    def configure_optimizers(self):
+        if self.lr_schedule:
+            optimizer = torch.optim.Adam(self.parameters(), betas=[.9, .999])
+            lr_func = lambda step: self.BERT.d_model**-.5 * \
+                                   min((step+1)**-.5, (step+1) * (self.warmup_steps**-1.5))
+            scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_func)
+            return {
+                "optimizer": optimizer,
+                "lr_scheduler": {
+                    "scheduler": scheduler,
+                    "monitor": "val_loss",
+                    "frequency": 1,
+                    "interval": "step"
+                    # If "monitor" references validation metrics, then "frequency" should be set to a
+                    # multiple of "trainer.check_val_every_n_epoch".
+                },
+            }
+        else:
+            #todo make adjustable
+            optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
+            return optimizer
+
+    def _at_epoch_end(self, outputs, stage=None):
+        # Loss
+        loss = torch.Tensor([tmp['loss'] for tmp in outputs])
+        loss = torch.mean(loss).item()
+        self.logger.experiment.add_scalar("Loss/%s" % stage, loss, self.current_epoch)
+
+    def training_epoch_end(self, outputs):
+        self._at_epoch_end(outputs, 'Train')
+
+    def validation_epoch_end(self, outputs):
+        self._at_epoch_end(outputs, 'Val')
+
+
 class MLMSystem(pl.LightningModule):
-    def __init__(self, backbone, masking_percentage):
+    def __init__(self, model, masking_percentage):
         """
         The system for autoregressive training with masking.
         :param backbone: Deep learning backbone that is pretrained.
         """
         super().__init__()
         self.save_hyperparameters()
-        self.backbone = backbone
+        self.BERT = model
         self.masking_percentage = masking_percentage
-
-    def forward(self, x):
-        # First token is CLS_TOKEN
-        x[:, 0] = CLS_TOKEN
-
-        return self.backbone(x)
 
     def training_step(self, batch, batch_idx):
         #todo adjust for new api of archtitecture
@@ -43,11 +87,6 @@ class MLMSystem(pl.LightningModule):
         loss = self._loss(y_hat, y, mask_arr)
         return loss
 
-    def configure_optimizers(self):
-        #todo adjust optimizer
-        optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
-        return optimizer
-
     @staticmethod
     def _loss(y_hat, y, mask_arr):
         # Adjust shape and dtypes
@@ -63,9 +102,9 @@ class MLMSystem(pl.LightningModule):
         return loss
 
 
-class ClassificationSystem(pl.LightningModule):
-    def __init__(self, model_path=None, model=None, target_dist=None):
-        super().__init__()
+class ClassificationSystem(MySystem):
+    def __init__(self, model_path=None, model=None, target_dist=None, lr_schedule=True):
+        super().__init__(lr_schedule=lr_schedule)
         self.save_hyperparameters()
         self.warmup_steps = 8000
         self.target_dist = target_dist
@@ -74,31 +113,6 @@ class ClassificationSystem(pl.LightningModule):
             self.BERT = MLMSystem.load_from_checkpoint(model_path)
         else:
             self.BERT = model
-
-
-    def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), betas=[.9, .999])
-        lr_func = lambda step: self.BERT.d_model**-.5 * \
-                               min((step+1)**-.5, (step+1) * (self.warmup_steps**-1.5))
-        scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_func)
-        return {
-            "optimizer": optimizer,
-            "lr_scheduler": {
-                "scheduler": scheduler,
-                "monitor": "val_loss",
-                "frequency": 1,
-                "interval": "step"
-                # If "monitor" references validation metrics, then "frequency" should be set to a
-                # multiple of "trainer.check_val_every_n_epoch".
-            },
-        }
-
-    def forward(self, x):
-        # First token is CLS_TOKEN
-        if x.ndim == 2:
-            x[:, 0] = CLS_TOKEN
-
-        return self.BERT(x)
 
     def training_step(self, batch, batch_idx):
         x, y = batch
@@ -113,29 +127,21 @@ class ClassificationSystem(pl.LightningModule):
         return {'loss': loss, 'preds': y_hat.detach(), 'target': y}
 
     def _at_epoch_end(self, outputs, stage=None):
-        preds = torch.cat([tmp['preds'] for tmp in outputs])
-        targets = torch.cat([tmp['target'] for tmp in outputs])
-        loss = torch.Tensor([tmp['loss'] for tmp in outputs])
+        super()._at_epoch_end(outputs, stage)
 
-        loss = torch.mean(loss).item()
-        self.logger.experiment.add_scalar("Loss/%s" % stage, loss, self.current_epoch)
-
+        # Accuracy
         num_classes = self.BERT.output_units
 
+        preds = torch.cat([tmp['preds'] for tmp in outputs])
+        targets = torch.cat([tmp['target'] for tmp in outputs])
         f1 = torchmetrics.functional.classification.f1(preds, targets, average='macro', num_classes=num_classes)
         self.logger.experiment.add_scalar("F1_macro/%s" % stage, f1, self.current_epoch)
 
+        # Confusion matrix
         confusion_matrix = torchmetrics.functional.confusion_matrix(preds, targets, num_classes=num_classes)
 
-        # Plot confusion matrix
         df_cm = pd.DataFrame(confusion_matrix.cpu().numpy(), index=range(num_classes), columns=range(num_classes))
         plt.figure(figsize=(10, 7))
         fig_ = sns.heatmap(df_cm, annot=True, cmap='Spectral', fmt='g').get_figure()
         plt.close(fig_)
         self.logger.experiment.add_figure("Confusion matrix/%s" % stage, fig_, self.current_epoch)
-
-    def training_epoch_end(self, outputs):
-        self._at_epoch_end(outputs, 'Train')
-
-    def validation_epoch_end(self, outputs):
-        self._at_epoch_end(outputs, 'Val')
