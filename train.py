@@ -48,6 +48,21 @@ def classify_from_tokens(ds_path, batch_size, epochs, d_model, n_head, dim_feed,
         max_epochs=epochs, progress_bar_refresh_rate=20, weights_summary='full', gpus=gpus, precision=precision)
     trainer.fit(mir_system, data_module)
 
+def pretrain_from_tokens(ds_path, batch_size, epochs, d_model, n_head, dim_feed, dropout, layers, masking_percentage,
+                         gpus=-1, precision=32, token_sequence_length=1024, name="default"):
+    ds_path = os.path.expanduser(ds_path)
+
+    data_module = FMATokenDataModule(ds_path, batch_size, token_sequence_length)
+    logger = TensorBoardLogger("tb_log", name="pretrain_tokens/%s" % name)
+    model = architectures.BERTWithEmbedding(
+        d_model=d_model, n_head=n_head, dim_feed=dim_feed, dropout=dropout, layers=layers,
+        max_len=token_sequence_length, output_units=16)
+
+    pretrain_system = MLMSystem(model=model, masking_percentage=masking_percentage)
+    trainer = pl.Trainer(logger=logger,
+                         max_epochs=epochs, progress_bar_refresh_rate=20, weights_summary='full', gpus=gpus,
+                         precision=precision)
+    trainer.fit(pretrain_system, data_module)
 
 if __name__ == '__main__':
     fire.Fire()

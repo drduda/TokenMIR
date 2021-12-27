@@ -15,6 +15,7 @@ class MySystem(pl.LightningModule):
     """
     def __init__(self, lr_schedule):
         super().__init__()
+        self.warmup_steps = 8000
         self.lr_schedule = lr_schedule
 
     def forward(self, x):
@@ -59,19 +60,18 @@ class MySystem(pl.LightningModule):
         self._at_epoch_end(outputs, 'Val')
 
 
-class MLMSystem(pl.LightningModule):
+class MLMSystem(MySystem):
     def __init__(self, model, masking_percentage):
         """
         The system for autoregressive training with masking.
         :param backbone: Deep learning backbone that is pretrained.
         """
-        super().__init__()
+        super().__init__(lr_schedule=True)
         self.save_hyperparameters()
         self.BERT = model
         self.masking_percentage = masking_percentage
 
     def training_step(self, batch, batch_idx):
-        #todo adjust for new api of archtitecture
         # Actual labels are discarded
         x, _ = batch
         y = x.detach().clone()
@@ -106,7 +106,6 @@ class ClassificationSystem(MySystem):
     def __init__(self, backbone_path=None, model=None, target_dist=None, lr_schedule=True):
         super().__init__(lr_schedule=lr_schedule)
         self.save_hyperparameters()
-        self.warmup_steps = 8000
         self.target_dist = target_dist
 
         if backbone_path:
