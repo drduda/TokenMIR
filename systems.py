@@ -83,7 +83,7 @@ class MLMSystem(MySystem):
         mask_arr[:, 0] = False
         x[mask_arr] = MASK_TOKEN
 
-        y_hat = self(x)
+        _, y_hat = self(x)
         loss = self._loss(y_hat, y, mask_arr)
         return loss
 
