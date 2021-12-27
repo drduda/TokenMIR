@@ -103,14 +103,14 @@ class MLMSystem(pl.LightningModule):
 
 
 class ClassificationSystem(MySystem):
-    def __init__(self, model_path=None, model=None, target_dist=None, lr_schedule=True):
+    def __init__(self, backbone_path=None, model=None, target_dist=None, lr_schedule=True):
         super().__init__(lr_schedule=lr_schedule)
         self.save_hyperparameters()
         self.warmup_steps = 8000
         self.target_dist = target_dist
 
-        if model_path:
-            self.BERT = MLMSystem.load_from_checkpoint(model_path)
+        if backbone_path:
+            self.BERT = ClassificationSystem.load_from_checkpoint(backbone_path).BERT
         else:
             self.BERT = model
 
