@@ -109,7 +109,7 @@ class ClassificationSystem(MySystem):
         self.target_dist = target_dist
 
         if backbone_path:
-            self.BERT = ClassificationSystem.load_from_checkpoint(backbone_path).BERT
+            self.BERT = MLMSystem.load_from_checkpoint(backbone_path).BERT
         else:
             self.BERT = model
 
