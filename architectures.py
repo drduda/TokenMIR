@@ -4,6 +4,9 @@ import math
 
 N_TOKENS = 2048
 N_SPECIAL_TOKENS = 2
+MASK_TOKEN = N_TOKENS
+CLS_TOKEN = N_TOKENS + 1
+
 
 
 class BERT(nn.Module):

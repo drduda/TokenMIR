@@ -4,9 +4,9 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 import torchmetrics
+from architectures import N_TOKENS, CLS_TOKEN, MASK_TOKEN, N_SPECIAL_TOKENS
 
-MASK_TOKEN = 2048
-CLS_TOKEN = 2049
+
 
 
 class MySystem(pl.LightningModule):
@@ -64,41 +64,67 @@ class MLMSystem(MySystem):
     def __init__(self, model, masking_percentage):
         """
         The system for autoregressive training with masking.
-        :param backbone: Deep learning backbone that is pretrained.
+        :param backbone: Deep learning backbone that is pretrained with MLMSystem.
+
+        Cite BERT: 15% of tokens are chosen. From these chosen tokens 80% are masked,
+        10% random, 10% remain unchanged
         """
         super().__init__(lr_schedule=True)
         self.save_hyperparameters()
         self.BERT = model
         self.masking_percentage = masking_percentage
 
-    def training_step(self, batch, batch_idx):
+        self.masked_token_share = 0.8
+        self.random_token_share = .1
+
+        assert self.masked_token_share + self.random_token_share <= 1
+
+    def step(self, batch, batch_idx):
         # Actual labels are discarded
         x, _ = batch
         y = x.detach().clone()
 
-        # Mask the input
+        # Select labels
         rand = torch.rand(x.shape)
-        mask_arr = rand < self.masking_percentage
-        # CLS_TOKEN should not be masked
-        mask_arr[:, 0] = False
-        x[mask_arr] = MASK_TOKEN
+        selected_arr = rand < self.masking_percentage
+        # CLS_TOKEN should not be label
+        selected_arr[:, 0] = False
+
+        # Chose masked token, random token and implicit unchanged
+        rand = torch.rand(x.shape)
+        masked_token_arr = rand < self.masked_token_share
+        random_token_arr = rand > (self.masked_token_share + self.random_token_share)
+
+        # Combine with selected
+        masked_token_arr = torch.logical_and(selected_arr, masked_token_arr)
+        random_token_arr = torch.logical_and(selected_arr, random_token_arr)
+
+        # Change input
+        x[masked_token_arr] = MASK_TOKEN
+        x[random_token_arr] = torch.randint_like(x[random_token_arr], low=0, high=N_TOKENS)
 
         _, y_hat = self(x)
-        loss = self._loss(y_hat, y, mask_arr)
-        return loss
+        loss = self._loss(y_hat, y, selected_arr)
+        return {'loss': loss}
+
+    def training_step(self, batch, batch_idx):
+        return self.step(batch, batch_idx)
+
+    def validation_step(self, batch, batch_idx):
+        return self.step(batch, batch_idx)
 
     @staticmethod
-    def _loss(y_hat, y, mask_arr):
+    def _loss(y_hat, y, selected_token_arr):
         # Adjust shape and dtypes
         y_hat = torch.flatten(y_hat, end_dim=1)
-        mask_arr = torch.flatten(mask_arr, end_dim=1)
+        selected_token_arr = torch.flatten(selected_token_arr, end_dim=1)
         y = torch.flatten(y).long()
 
         #todo is the loss correct
         loss = torch.nn.functional.cross_entropy(y_hat, y, reduction="none")
 
         # Only the masked tokens are important for the loss
-        loss = torch.mean(loss * mask_arr)
+        loss = torch.mean(loss * selected_token_arr)
         return loss
 
 
