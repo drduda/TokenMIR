@@ -85,13 +85,13 @@ class MLMSystem(MySystem):
         y = x.detach().clone()
 
         # Select labels
-        rand = torch.rand(x.shape)
+        rand = torch.rand(x.shape).type_as(x)
         selected_arr = rand < self.masking_percentage
         # CLS_TOKEN should not be label
         selected_arr[:, 0] = False
 
         # Chose masked token, random token and implicit unchanged
-        rand = torch.rand(x.shape)
+        rand = torch.rand(x.shape).type_as(x)
         masked_token_arr = rand < self.masked_token_share
         random_token_arr = rand > (self.masked_token_share + self.random_token_share)
 
