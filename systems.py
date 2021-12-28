@@ -95,7 +95,8 @@ class ClassificationSystem(pl.LightningModule):
 
     def forward(self, x):
         # First token is CLS_TOKEN
-        x[:, 0] = CLS_TOKEN
+        if x.ndim == 2:
+            x[:, 0] = CLS_TOKEN
 
         return self.BERT(x)
 

@@ -1,9 +1,10 @@
 from typing import Optional
 from torch.utils.data import Dataset, DataLoader
-import pytorch_lightning as pl
 import torch
 import os
 import random
+from tokenmir_datamodule import TokenMIRDataModule
+
 
 class FMATokenDataset(Dataset):
     def __init__(self, ds_path, length):
@@ -28,14 +29,15 @@ class FMATokenDataset(Dataset):
         Y = self.Y.iloc[item]
         return token_track, Y
 
-class FMATokenDataModule(pl.LightningDataModule):
+
+class FMATokenDataModule(TokenMIRDataModule):
     def __init__(self, data_dir, batch_size, token_length):
         super().__init__()
         self.data_dir = data_dir
         self.batch_size = batch_size
         self.token_length = token_length
 
-    def target_distribution(self):
+    def get_target_distribution_weights(self):
         train_path = os.path.join(self.data_dir, "tokens_ds_size_medium_split_training.pt")
         train_ds = FMATokenDataset(train_path, self.token_length)
 
