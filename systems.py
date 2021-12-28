@@ -28,8 +28,8 @@ class MySystem(pl.LightningModule):
     def configure_optimizers(self):
         if self.lr_schedule:
             optimizer = torch.optim.Adam(self.parameters(), betas=[.9, .999])
-            lr_func = lambda step: self.BERT.d_model**-.5 * \
-                                   min((step+1)**-.5, (step+1) * (self.warmup_steps**-1.5))
+            def lr_func(step):
+                return self.BERT.d_model**-.5 * min((step+1)**-.5, (step+1) * (self.warmup_steps**-1.5))
             scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_func)
             return {
                 "optimizer": optimizer,
