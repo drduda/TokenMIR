@@ -26,7 +26,7 @@ class BERT(nn.Module):
 
     def forward(self, embedding):
         embedding = self.pos_encoder(embedding * math.sqrt(self.d_model))
-        output = self.transformer(self.pos_encoder(embedding))
+        output = self.transformer(embedding)
         y_cls = self.classification(output[:, 0, :])
         y_mlm = self.masked_language_model(output)
         return y_cls, y_mlm
