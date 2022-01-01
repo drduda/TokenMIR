@@ -27,7 +27,7 @@ class MySystem(pl.LightningModule):
 
     def configure_optimizers(self):
         if self.lr_schedule:
-            optimizer = torch.optim.Adam(self.parameters(), betas=[.9, .999])
+            optimizer = torch.optim.Adam(self.parameters(), betas=[.9, .999], weight_decay=1e-2)
             lr_func = lambda step: self.BERT.d_model**-.5 * \
                                    min((step+1)**-.5, (step+1) * (self.warmup_steps**-1.5))
             scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_func)
@@ -104,8 +104,15 @@ class MLMSystem(MySystem):
         x[random_token_arr] = torch.randint_like(x[random_token_arr], low=0, high=N_TOKENS)
 
         _, y_hat = self(x)
-        loss = self._loss(y_hat, y, selected_arr)
-        return {'loss': loss}
+
+        # Adjust axes
+        y_hat = torch.swapaxes(y_hat, 1, 2)
+
+        # Loss Function
+        loss = torch.nn.functional.cross_entropy(y_hat, y.long(), reduction="none")
+        loss = torch.mean(loss * selected_arr)
+
+        return {'loss': loss, 'preds': y_hat.detach(), 'target': y}
 
     def training_step(self, batch, batch_idx):
         return self.step(batch, batch_idx)
@@ -113,19 +120,16 @@ class MLMSystem(MySystem):
     def validation_step(self, batch, batch_idx):
         return self.step(batch, batch_idx)
 
-    @staticmethod
-    def _loss(y_hat, y, selected_token_arr):
-        # Adjust shape and dtypes
-        y_hat = torch.flatten(y_hat, end_dim=1)
-        selected_token_arr = torch.flatten(selected_token_arr, end_dim=1)
-        y = torch.flatten(y).long()
+    def _at_epoch_end(self, outputs, stage=None):
+        super()._at_epoch_end(outputs, stage)
 
-        #todo is the loss correct
-        loss = torch.nn.functional.cross_entropy(y_hat, y, reduction="none")
+        # Accuracy
+        num_classes = self.BERT.output_units
 
-        # Only the masked tokens are important for the loss
-        loss = torch.mean(loss * selected_token_arr)
-        return loss
+        preds = torch.cat([tmp['preds'] for tmp in outputs])
+        targets = torch.cat([tmp['target'] for tmp in outputs])
+        acc = torchmetrics.functional.classification.accuracy(preds, targets, top_k=10)
+        self.logger.experiment.add_scalar("Accuracy/%s" % stage, acc, self.current_epoch)
 
 
 class ClassificationSystem(MySystem):
