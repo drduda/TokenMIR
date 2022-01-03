@@ -112,24 +112,13 @@ class MLMSystem(MySystem):
         loss = torch.nn.functional.cross_entropy(y_hat, y.long(), reduction="none")
         loss = torch.mean(loss * selected_arr)
 
-        return {'loss': loss, 'preds': y_hat.detach(), 'target': y}
+        return {'loss': loss}
 
     def training_step(self, batch, batch_idx):
         return self.step(batch, batch_idx)
 
     def validation_step(self, batch, batch_idx):
         return self.step(batch, batch_idx)
-
-    def _at_epoch_end(self, outputs, stage=None):
-        super()._at_epoch_end(outputs, stage)
-
-        # Accuracy
-        num_classes = self.BERT.output_units
-
-        preds = torch.cat([tmp['preds'] for tmp in outputs])
-        targets = torch.cat([tmp['target'] for tmp in outputs])
-        acc = torchmetrics.functional.classification.accuracy(preds, targets, top_k=10)
-        self.logger.experiment.add_scalar("Accuracy/%s" % stage, acc, self.current_epoch)
 
 
 class ClassificationSystem(MySystem):
