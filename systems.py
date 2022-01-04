@@ -43,8 +43,7 @@ class MySystem(pl.LightningModule):
                 },
             }
         else:
-            #todo make adjustable
-            optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
+            optimizer = torch.optim.Adam(self.parameters(), betas=[.9, .999], lr=self.learning_rate)
             return optimizer
 
     def _at_epoch_end(self, outputs, stage=None):
@@ -122,10 +121,13 @@ class MLMSystem(MySystem):
 
 
 class ClassificationSystem(MySystem):
-    def __init__(self, backbone_path=None, model=None, target_dist=None, lr_schedule=True):
+    def __init__(self, backbone_path=None, model=None, target_dist=None, lr_schedule=True, learning_rate=3e-5):
         super().__init__(lr_schedule=lr_schedule)
         self.save_hyperparameters()
         self.target_dist = target_dist
+
+        if not lr_schedule:
+            self.learning_rate = learning_rate
 
         if backbone_path:
             self.BERT = MLMSystem.load_from_checkpoint(backbone_path).BERT

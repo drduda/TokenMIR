@@ -64,13 +64,18 @@ def pretrain_from_tokens(ds_path, batch_size, epochs, d_model, n_head, dim_feed,
                          precision=precision)
     trainer.fit(pretrain_system, data_module)
 
-def finetune_from_tokens(ds_path, backbone_path, batch_size, epochs, gpus=-1, precision=32, token_sequence_length=1024, name="default"):
+def finetune_from_tokens(ds_path, backbone_path, batch_size, epochs, learning_rate, gpus=-1, precision=32,
+                         token_sequence_length=1024, name="default"):
     ds_path = os.path.expanduser(ds_path)
+    backbone_path = os.path.expanduser(backbone_path)
 
     data_module = FMATokenDataModule(ds_path, batch_size, token_sequence_length)
     logger = TensorBoardLogger("tb_log", name="finetune_tokens/%s" % name)
 
-    mir_system = ClassificationSystem(backbone_path=backbone_path, target_dist=data_module.get_target_distribution_weights())
+    mir_system = ClassificationSystem(backbone_path=backbone_path,
+                                      target_dist=data_module.get_target_distribution_weights(),
+                                      learning_rate=learning_rate,
+                                      lr_schedule=False)
     trainer = pl.Trainer(logger=logger,
                          max_epochs=epochs, progress_bar_refresh_rate=20, weights_summary='full', gpus=gpus,
                          precision=precision)
