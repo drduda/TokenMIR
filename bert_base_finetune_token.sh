@@ -5,4 +5,6 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --partition=hpc3_gpu
 
-srun python train.py finetune_from_tokens --ds_path=~/data/fma_medium_tokens --batch_size=32 --token_sequence_length=1024 --epochs=40 --backbone_path=~/backbone/backbone.ckpt --learning_rate=3e-5 --gpus=1 --precision=16
+read varname
+
+srun python train.py finetune_from_tokens --ds_path=~/data/fma_medium_tokens --batch_size=32 --token_sequence_length=1024 --epochs=40 --backbone_path=~/backbone/backbone.ckpt --learning_rate=3e-5 --gpus=1 --precision=16 --name=$varname
