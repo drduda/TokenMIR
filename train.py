@@ -74,7 +74,7 @@ def finetune_from_tokens(ds_path, backbone_path, batch_size, epochs, learning_ra
 
     mir_system = ClassificationSystem(backbone_path=backbone_path,
                                       target_dist=data_module.get_target_distribution_weights(),
-                                      learning_rate=learning_rate,
+                                      static_learning_rate=learning_rate,
                                       lr_schedule=False)
     trainer = pl.Trainer(logger=logger,
                          max_epochs=epochs, progress_bar_refresh_rate=20, weights_summary='full', gpus=gpus,

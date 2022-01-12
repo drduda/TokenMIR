@@ -69,7 +69,7 @@ class MLMSystem(MySystem):
         10% random, 10% remain unchanged
         """
         super().__init__(lr_schedule=True)
-        self.save_hyperparameters()
+        self.save_hyperparameters(ignore=["model"])
         self.BERT = model
         self.masking_percentage = masking_percentage
 
@@ -121,13 +121,13 @@ class MLMSystem(MySystem):
 
 
 class ClassificationSystem(MySystem):
-    def __init__(self, backbone_path=None, model=None, target_dist=None, lr_schedule=True, learning_rate=3e-5):
+    def __init__(self, backbone_path=None, model=None, target_dist=None, lr_schedule=True, static_learning_rate=3e-5):
         super().__init__(lr_schedule=lr_schedule)
-        self.save_hyperparameters()
+        self.save_hyperparameters(ignore=["model"])
         self.target_dist = target_dist
 
         if not lr_schedule:
-            self.learning_rate = learning_rate
+            self.learning_rate = static_learning_rate
 
         if backbone_path:
             self.BERT = MLMSystem.load_from_checkpoint(backbone_path).BERT
