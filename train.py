@@ -61,7 +61,7 @@ def pretrain_from_tokens(ds_path, batch_size, epochs, d_model, n_head, dim_feed,
     pretrain_system = MLMSystem(model=model, masking_percentage=masking_percentage)
     trainer = pl.Trainer(logger=logger,
                          max_epochs=epochs, progress_bar_refresh_rate=20, weights_summary='full', gpus=gpus,
-                         precision=precision, accelerator="ddp", num_nodes=4
+                         precision=precision, accelerator="ddp"
                          )
     trainer.fit(pretrain_system, data_module)
 
