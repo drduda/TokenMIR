@@ -15,7 +15,7 @@ class BERT(nn.Module):
 
         # Define model components
         encoder_layer = nn.TransformerEncoderLayer(d_model=d_model, nhead=n_head, dim_feedforward=dim_feed,
-                                                         dropout=dropout, batch_first=True)
+                                                         dropout=dropout, batch_first=True, layer_norm_eps=6.1e-5)
         self.transformer = nn.TransformerEncoder(encoder_layer, layers)
         self.pos_encoder = PositionalEncoding(d_model, dropout, max_len)
         self.d_model = d_model
