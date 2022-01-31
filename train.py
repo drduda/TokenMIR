@@ -28,7 +28,7 @@ def classify_from_spectrograms(fma_dir, batch_size, epochs, d_model, n_head, dim
     mir_system = ClassificationSystem(model=model, target_dist=torch.ones(16))
     trainer = pl.Trainer(logger=logger,
                          max_epochs=epochs, progress_bar_refresh_rate=20, weights_summary='full', gpus=gpus,
-                         precision=precision)
+                         precision=precision, accelerator="ddp")
     trainer.fit(mir_system, data_module)
 
 
