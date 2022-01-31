@@ -60,6 +60,12 @@ class MySystem(pl.LightningModule):
     def validation_epoch_end(self, outputs):
         self._at_epoch_end(outputs, 'Val')
 
+    def training_step(self, batch, batch_idx):
+        return self.step(batch, batch_idx)
+
+    def validation_step(self, batch, batch_idx):
+        return self.step(batch, batch_idx)
+
 
 class MLMSystem(MySystem):
     def __init__(self, model, masking_percentage):
@@ -115,11 +121,7 @@ class MLMSystem(MySystem):
 
         return {'loss': loss}
 
-    def training_step(self, batch, batch_idx):
-        return self.step(batch, batch_idx)
 
-    def validation_step(self, batch, batch_idx):
-        return self.step(batch, batch_idx)
 
 
 class ClassificationSystem(MySystem):
@@ -136,13 +138,7 @@ class ClassificationSystem(MySystem):
         else:
             self.BERT = model
 
-    def training_step(self, batch, batch_idx):
-        x, y = batch
-        y_hat, _ = self(x)
-        loss = torch.nn.functional.cross_entropy(y_hat, y.long(), weight=self.target_dist.type_as(y_hat))
-        return {'loss': loss, 'preds': y_hat.detach(), 'target': y}
-
-    def validation_step(self, batch, batch_idx):
+    def step(self, batch, batch_idx):
         x, y = batch
         y_hat, _ = self(x)
         loss = torch.nn.functional.cross_entropy(y_hat, y.long(), weight=self.target_dist.type_as(y_hat))
