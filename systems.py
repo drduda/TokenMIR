@@ -66,6 +66,62 @@ class MySystem(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         return self.step(batch, batch_idx)
 
+class MaskedSpectroSystem(MySystem):
+    def __init__(self, model, masking_percentage=.25):
+        super().__init__(lr_schedule=True)
+        self.save_hyperparameters(ignore=["model"])
+        self.BERT = model
+        self.row_mask_length = 32
+
+        self.masking_percentage = masking_percentage
+        self.masked_zero_share = 0.7
+        self.masked_random_share = .2
+
+
+    def step(self, batch, batch_idx):
+        # Actual labels are discarded
+        x, _ = batch
+        y = x.detach().clone()
+
+        batch_size = x.shape[0]
+        # Columns are squeezed first
+        num_columns = int(x.shape[1]/self.row_mask_length)
+        num_rows = x.shape[2]
+
+        # Both numbers should be power of two for performing best
+        assert num_rows % self.row_mask_length == 0
+
+        # Select rows
+        rand = torch.rand((batch_size, num_columns)).to(x.device)
+        selected_rows = rand < self.masking_percentage
+
+        # Chose kind of masking for rows
+        rand = torch.rand(rand.shape).to(x.device)
+        masked_zero_arr = rand < self.masked_zero_share
+        masked_random_arr = rand > (1 - self.masked_random_share)
+
+        # Combine with selected
+        masked_zero_arr   = torch.logical_and(selected_rows, masked_zero_arr)
+        masked_random_arr = torch.logical_and(selected_rows, masked_random_arr)
+
+        # Stretch them so that they have row mask length
+        selected_rows     = selected_rows.repeat_interleave(self.row_mask_length, dim=-1)
+        masked_zero_arr   = masked_zero_arr.repeat_interleave(self.row_mask_length, dim=-1)
+        masked_random_arr = masked_random_arr.repeat_interleave(self.row_mask_length, dim=-1)
+
+
+
+
+
+        _, y_hat = self(x)
+
+        # Adjust axes
+        y_hat = torch.swapaxes(y_hat, 1, 2)
+
+        # Loss Function
+        loss = torch.nn.functional.cross_entropy(y_hat, y.long(), reduction="none")
+        loss = torch.mean(loss * selected_arr)
+        return {'loss': loss}
 
 class MLMSystem(MySystem):
     def __init__(self, model, masking_percentage):
@@ -100,7 +156,7 @@ class MLMSystem(MySystem):
         # Chose masked token, random token and implicit unchanged
         rand = torch.rand(x.shape).to(x.device)
         masked_token_arr = rand < self.masked_token_share
-        random_token_arr = rand > (self.masked_token_share + self.random_token_share)
+        random_token_arr = rand > (1 - self.random_token_share)
 
         # Combine with selected
         masked_token_arr = torch.logical_and(selected_arr, masked_token_arr)
