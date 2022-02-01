@@ -76,6 +76,7 @@ class MaskedSpectroSystem(MySystem):
         self.masking_percentage = masking_percentage
         self.masked_zero_share = 0.7
         self.masked_random_share = .2
+        self.column_block_size = int(self.BERT.input_units * self.masking_percentage)
 
 
     def step(self, batch, batch_idx):
@@ -88,10 +89,11 @@ class MaskedSpectroSystem(MySystem):
         num_columns = int(x.shape[1]/self.row_mask_length)
         num_rows = x.shape[2]
 
+        # Masking rows
         # Both numbers should be power of two for performing best
         assert num_rows % self.row_mask_length == 0
 
-        # Select rows
+        # Select rows randomly
         rand = torch.rand((batch_size, num_columns)).to(x.device)
         selected_rows = rand < self.masking_percentage
 
@@ -109,9 +111,18 @@ class MaskedSpectroSystem(MySystem):
         masked_zero_arr   = masked_zero_arr.repeat_interleave(self.row_mask_length, dim=-1)
         masked_random_arr = masked_random_arr.repeat_interleave(self.row_mask_length, dim=-1)
 
+        # Change rows
+        x[masked_zero_arr] = 0
+        x[masked_random_arr] = torch.randn_like(x[masked_random_arr])
 
+        # Change column block
+        column_block_start_idx = torch.randint(num_rows-self.column_block_size, (1,)).item()
+        x[:, :, column_block_start_idx: column_block_start_idx+self.column_block_size] = 0
 
-
+        # Make selected array for loss function
+        selected_arr = torch.zeros(x.shape, dtype=torch.bool, device=x.device)
+        selected_arr[selected_rows] = True
+        selected_arr[:, :, column_block_start_idx: column_block_start_idx+self.column_block_size] = True
 
         _, y_hat = self(x)
 

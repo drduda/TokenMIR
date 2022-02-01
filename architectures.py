@@ -70,6 +70,7 @@ class BERTWithoutEmbedding(BERT):
     def __init__(self, d_model, n_head, dim_feed, dropout, layers, max_len, output_units, input_units):
         super().__init__(d_model, n_head, dim_feed, dropout, layers, max_len, output_units)
 
+        self.input_units = input_units
         self.projection = nn.Linear(input_units, d_model)
 
     def forward(self, x):
