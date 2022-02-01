@@ -47,8 +47,8 @@ def classify_from_tokens(ds_path, batch_size, epochs, d_model, n_head, dim_feed,
         max_epochs=epochs, progress_bar_refresh_rate=20, weights_summary='full', gpus=gpus, precision=precision)
     trainer.fit(mir_system, data_module)
 
-def pretrain_from_spectrograms(fma_dir, batch_size, epochs, d_model, n_head, dim_feed, dropout, layers, gpus=-1,
-                               precision=32, name="default", snippet_length=1024, n_mels=128, n_fft=2048,
+def pretrain_from_spectrograms(fma_dir, batch_size, epochs, d_model, n_head, dim_feed, dropout, layers, row_mask_length,
+                               gpus=-1, precision=32, name="default", snippet_length=1024, n_mels=128, n_fft=2048,
                                hop_length=512, fma_subset="medium"):
     assert d_model % n_head == 0
     fma_dir = os.path.expanduser(fma_dir)
@@ -62,7 +62,7 @@ def pretrain_from_spectrograms(fma_dir, batch_size, epochs, d_model, n_head, dim
     model = architectures.BERTWithoutEmbedding(
         d_model=d_model, n_head=n_head, dim_feed=dim_feed, dropout=dropout, layers=layers,
         max_len=snippet_length, output_units=16, input_units=n_mels)
-    mir_system = MaskedSpectroSystem(model=model)
+    mir_system = MaskedSpectroSystem(model=model, row_mask_length=row_mask_length)
     trainer = pl.Trainer(logger=logger,
                          max_epochs=epochs, progress_bar_refresh_rate=20, weights_summary='full', gpus=gpus,
                          precision=precision)

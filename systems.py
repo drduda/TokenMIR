@@ -67,11 +67,11 @@ class MySystem(pl.LightningModule):
         return self.step(batch, batch_idx)
 
 class MaskedSpectroSystem(MySystem):
-    def __init__(self, model, masking_percentage=.25):
+    def __init__(self, model, row_mask_length, masking_percentage=.25):
         super().__init__(lr_schedule=True)
         self.save_hyperparameters(ignore=["model"])
         self.BERT = model
-        self.row_mask_length = 32
+        self.row_mask_length = row_mask_length
 
         self.masking_percentage = masking_percentage
         self.masked_zero_share = 0.7
@@ -126,11 +126,8 @@ class MaskedSpectroSystem(MySystem):
 
         _, y_hat = self(x)
 
-        # Adjust axes
-        y_hat = torch.swapaxes(y_hat, 1, 2)
-
         # Loss Function
-        loss = torch.nn.functional.cross_entropy(y_hat, y.long(), reduction="none")
+        loss = torch.nn.functional.huber_loss(y_hat, y, reduction="none")
         loss = torch.mean(loss * selected_arr)
         return {'loss': loss}
 
