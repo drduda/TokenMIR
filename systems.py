@@ -11,7 +11,7 @@ from architectures import N_TOKENS, CLS_TOKEN, MASK_TOKEN, N_SPECIAL_TOKENS
 
 class MySystem(pl.LightningModule):
     """
-    Superclass for the other systems.
+    Abstract class for the other systems.
     """
     def __init__(self, lr_schedule):
         super().__init__()

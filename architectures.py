@@ -10,6 +10,9 @@ CLS_TOKEN = N_TOKENS + 1
 
 
 class BERT(nn.Module):
+    """
+    Abstract superclass
+    """
     def __init__(self, d_model, n_head, dim_feed, dropout, layers, max_len, output_units):
         super().__init__()
 
@@ -22,14 +25,13 @@ class BERT(nn.Module):
         self.output_units = output_units
 
         self.classification = nn.Linear(d_model, output_units)
-        self.masked_language_model = nn.Linear(d_model, N_TOKENS)
 
     def forward(self, embedding):
         embedding = self.pos_encoder(embedding * math.sqrt(self.d_model))
         output = self.transformer(embedding)
         y_cls = self.classification(output[:, 0, :])
-        y_mlm = self.masked_language_model(output)
-        return y_cls, y_mlm
+        y_mask_prediction = self.model_for_pretraining(output)
+        return y_cls, y_mask_prediction
 
 class PositionalEncoding(nn.Module):
     def __init__(self, d_model: int, dropout, max_len):
@@ -59,6 +61,7 @@ class BERTWithEmbedding(BERT):
         super().__init__(d_model, n_head, dim_feed, dropout, layers, max_len, output_units)
 
         self.embedding = nn.Embedding(N_SPECIAL_TOKENS + N_TOKENS, self.d_model)
+        self.model_for_pretraining = nn.Linear(d_model, N_TOKENS)
 
     def forward(self, x):
         return super().forward(self.embedding(x))
@@ -72,6 +75,7 @@ class BERTWithoutEmbedding(BERT):
 
         self.input_units = input_units
         self.projection = nn.Linear(input_units, d_model)
+        self.model_for_pretraining = nn.Linear(d_model, input_units)
 
     def forward(self, x):
         return super().forward(self.projection(x))
