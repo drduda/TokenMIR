@@ -69,7 +69,7 @@ class MySystem(pl.LightningModule):
 class MaskedSpectroSystem(MySystem):
     def __init__(self, model, row_mask_length, masking_percentage=.25):
         super().__init__(lr_schedule=True)
-        self.save_hyperparameters(ignore=["model"])
+        self.save_hyperparameters()
         self.BERT = model
         self.row_mask_length = row_mask_length
 
@@ -141,7 +141,7 @@ class MLMSystem(MySystem):
         10% random, 10% remain unchanged
         """
         super().__init__(lr_schedule=True)
-        self.save_hyperparameters(ignore=["model"])
+        self.save_hyperparameters()
         self.BERT = model
         self.masking_percentage = masking_percentage
 
@@ -198,7 +198,10 @@ class ClassificationSystem(MySystem):
             self.learning_rate = static_learning_rate
 
         if backbone_path:
-            self.BERT = MLMSystem.load_from_checkpoint(backbone_path).BERT
+            try:
+                self.BERT = MLMSystem.load_from_checkpoint(backbone_path).BERT
+            except TypeError:
+                self.BERT = MaskedSpectroSystem.load_from_checkpoint(backbone_path).BERT
         else:
             self.BERT = model
 

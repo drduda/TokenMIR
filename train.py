@@ -68,6 +68,28 @@ def pretrain_from_spectrograms(fma_dir, batch_size, epochs, d_model, n_head, dim
                          precision=precision)
     trainer.fit(mir_system, data_module)
 
+def finetune_from_spectrograms(fma_dir, backbone_path, batch_size, epochs, learning_rate, gpus=-1, precision=32,
+                               name="default", snippet_length=1024, n_mels=128, n_fft=2048,
+                               hop_length=512, fma_subset="medium"):
+    fma_dir = os.path.expanduser(fma_dir)
+    backbone_path = os.path.expanduser(backbone_path)
+
+    # Most values are taken from librosa.stft #todo take values from pretraining
+    data_module = FmaSpectrogramGenreDataModule(
+        fma_dir, fma_subset, n_fft=n_fft, hop_length=hop_length, sr=44100, batch_size=batch_size, file_ext=".mp3",
+        snippet_length=snippet_length, save_specs=True
+    )
+    logger = TensorBoardLogger("tb_log", name="finetune_spectro/%s" % name)
+
+    mir_system = ClassificationSystem(backbone_path=backbone_path,
+                                      target_dist=data_module.get_target_distribution_weights(),
+                                      static_learning_rate=learning_rate,
+                                      lr_schedule=False)
+    trainer = pl.Trainer(logger=logger,
+                         max_epochs=epochs, progress_bar_refresh_rate=20, weights_summary='full', gpus=gpus,
+                         precision=precision)
+    trainer.fit(mir_system, data_module)
+
 def pretrain_from_tokens(ds_path, batch_size, epochs, d_model, n_head, dim_feed, dropout, layers, masking_percentage,
                          gpus=-1, precision=32, token_sequence_length=1024, name="default"):
     ds_path = os.path.expanduser(ds_path)
