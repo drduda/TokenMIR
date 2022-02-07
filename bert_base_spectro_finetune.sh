@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=bert_base_spectro
+#SBATCH --job-name=f_spectro
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
 #SBATCH --ntasks-per-node=1

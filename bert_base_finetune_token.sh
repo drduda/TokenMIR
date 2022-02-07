@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=bert_base_token
+#SBATCH --job-name=f_token
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
 #SBATCH --ntasks-per-node=1
