@@ -8,4 +8,4 @@
 source ~/.bashrc
 conda activate TokenMIR
 
-srun python train.py finetune_from_tokens --ds_path=~/data/fma_medium_tokens --batch_size=32 --token_sequence_length=1024 --epochs=? --backbone_path=~/backbone/backbone.ckpt --learning_rate=? --gpus=1 --precision=16 --name=$varname
+srun python train.py finetune_from_tokens --ds_path=~/data/fma_medium_tokens --batch_size=? --token_sequence_length=1344 --epochs=40 --backbone_path=? --learning_rate=? --gpus=1 --precision=16 --name=?

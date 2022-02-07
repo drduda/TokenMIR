@@ -8,4 +8,4 @@
 source ~/.bashrc
 conda activate TokenMIR
 
-srun python train.py classify_from_spectrograms --fma_dir=~/data --batch_size=64 --epochs=500 --d_model=768 --n_head=12 --dim_feed=3072 --dropout=0.1 --layers=4 --gpus=1 --precision=16 --snippet_length=1024 --n_mels=128 --n_fft=480 --hop_length=128 --fma_subset="medium"
+srun python train.py classify_from_spectrograms --fma_dir=~/data --batch_size=64 --epochs=500 --d_model=768 --n_head=12 --dim_feed=3072 --dropout=0.1 --layers=4 --gpus=1 --precision=16 --snippet_length=1344 --n_mels=128 --n_fft=480 --hop_length=128 --fma_subset="medium" --name=?
