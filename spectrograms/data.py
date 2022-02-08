@@ -254,13 +254,13 @@ class FmaSpectrogramGenreDataModule(TokenMIRDataModule):
             )
 
     def train_dataloader(self) -> Union[DataLoader, List[DataLoader]]:
-        return DataLoader(self.spec_ds_train, batch_size=self.batch_size, shuffle=True)
+        return DataLoader(self.spec_ds_train, batch_size=self.batch_size, num_workers=4, shuffle=True)
 
     def val_dataloader(self) -> Union[DataLoader, List[DataLoader]]:
-        return DataLoader(self.spec_ds_val, batch_size=self.batch_size, shuffle=False)
+        return DataLoader(self.spec_ds_val, batch_size=self.batch_size, num_workers=4, shuffle=False)
 
     def test_dataloader(self) -> Union[DataLoader, List[DataLoader]]:
-        return DataLoader(self.spec_ds_test, batch_size=self.batch_size, shuffle=False)
+        return DataLoader(self.spec_ds_test, batch_size=self.batch_size, num_workers=4, shuffle=False)
 
     def get_clip_duration(self, x: pd.Series) -> pd.Series:
         """

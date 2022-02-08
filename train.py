@@ -1,5 +1,5 @@
 import os.path
-
+import warnings
 import fire
 from fma_token_dataset import FMATokenDataModule
 import pytorch_lightning as pl
@@ -124,4 +124,5 @@ def finetune_from_tokens(ds_path, backbone_path, batch_size, epochs, learning_ra
     trainer.fit(mir_system, data_module)
 
 if __name__ == '__main__':
+    warnings.simplefilter("ignore", category=UserWarning)
     fire.Fire()
