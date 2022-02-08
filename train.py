@@ -18,7 +18,7 @@ def classify_from_spectrograms(fma_dir, batch_size, epochs, d_model, n_head, dim
     # Most values are taken from librosa.stft
     data_module = FmaSpectrogramGenreDataModule(
         fma_dir, fma_subset, n_fft=n_fft, hop_length=hop_length, sr=44100, batch_size=batch_size, file_ext=".mp3",
-        snippet_length=snippet_length, save_specs=True
+        snippet_length=snippet_length, save_specs=True, n_mels=n_mels
     )
     logger = TensorBoardLogger("tb_log", name="spectro/%s" % name)
     model = architectures.BERTWithoutEmbedding(
@@ -56,7 +56,7 @@ def pretrain_from_spectrograms(fma_dir, batch_size, epochs, d_model, n_head, dim
     # Most values are taken from librosa.stft
     data_module = FmaSpectrogramGenreDataModule(
         fma_dir, fma_subset, n_fft=n_fft, hop_length=hop_length, sr=44100, batch_size=batch_size, file_ext=".mp3",
-        snippet_length=snippet_length, save_specs=True
+        snippet_length=snippet_length, save_specs=True, n_mels=n_mels
     )
     logger = TensorBoardLogger("tb_log", name="pretrain_spectro/%s" % name)
     model = architectures.BERTWithoutEmbedding(
@@ -77,7 +77,7 @@ def finetune_from_spectrograms(fma_dir, backbone_path, batch_size, epochs, learn
     # Most values are taken from librosa.stft #todo take values from pretraining
     data_module = FmaSpectrogramGenreDataModule(
         fma_dir, fma_subset, n_fft=n_fft, hop_length=hop_length, sr=44100, batch_size=batch_size, file_ext=".mp3",
-        snippet_length=snippet_length, save_specs=True
+        snippet_length=snippet_length, save_specs=True, n_mels=n_mels
     )
     logger = TensorBoardLogger("tb_log", name="finetune_spectro/%s" % name)
 
