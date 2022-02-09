@@ -7,8 +7,6 @@ import torchmetrics
 from architectures import N_TOKENS, CLS_TOKEN, MASK_TOKEN, N_SPECIAL_TOKENS
 
 
-
-
 class MySystem(pl.LightningModule):
     """
     Abstract class for the other systems.
@@ -52,7 +50,7 @@ class MySystem(pl.LightningModule):
         # Loss
         loss = torch.Tensor([tmp['loss'] for tmp in outputs])
         loss = torch.mean(loss).item()
-        self.logger.experiment.add_scalar("Loss/%s" % stage, loss, self.current_epoch)
+        self.logger.experiment.add_scalar("Loss/%s" % stage, loss, self.current_epoch, sync_dist=True)
 
     def training_epoch_end(self, outputs):
         self._at_epoch_end(outputs, 'Train')
@@ -66,6 +64,7 @@ class MySystem(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         return self.step(batch, batch_idx)
 
+
 class MaskedSpectroSystem(MySystem):
     def __init__(self, model, row_mask_length, masking_percentage=.25):
         super().__init__(lr_schedule=True)
@@ -77,7 +76,6 @@ class MaskedSpectroSystem(MySystem):
         self.masked_zero_share = 0.7
         self.masked_random_share = .2
         self.column_block_size = int(self.BERT.input_units * self.masking_percentage)
-
 
     def step(self, batch, batch_idx):
         # Actual labels are discarded
@@ -94,11 +92,11 @@ class MaskedSpectroSystem(MySystem):
         assert num_rows % self.row_mask_length == 0
 
         # Select rows randomly
-        rand = torch.rand((batch_size, num_columns)).to(x.device)
+        rand = torch.rand((batch_size, num_columns)).type_as(x)
         selected_rows = rand < self.masking_percentage
 
         # Chose kind of masking for rows
-        rand = torch.rand(rand.shape).to(x.device)
+        rand = torch.rand(rand.shape).type_as(x)
         masked_zero_arr = rand < self.masked_zero_share
         masked_random_arr = rand > (1 - self.masked_random_share)
 
@@ -130,6 +128,7 @@ class MaskedSpectroSystem(MySystem):
         loss = torch.nn.functional.huber_loss(y_hat, y, reduction="none")
         loss = torch.mean(loss * selected_arr)
         return {'loss': loss}
+
 
 class MLMSystem(MySystem):
     def __init__(self, model, masking_percentage):
@@ -184,8 +183,6 @@ class MLMSystem(MySystem):
         loss = torch.mean(loss * selected_arr)
 
         return {'loss': loss}
-
-
 
 
 class ClassificationSystem(MySystem):
