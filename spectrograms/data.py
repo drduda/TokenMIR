@@ -11,6 +11,7 @@ import pandas as pd
 
 from spectrograms import spectrogram_utils as spec_utils
 from tokenmir_datamodule import TokenMIRDataModule
+from audioread.exceptions import NoBackendError
 
 
 class SpectrogramDataset(Dataset):
@@ -271,7 +272,7 @@ class FmaSpectrogramGenreDataModule(TokenMIRDataModule):
         try:
             signal_len = spec_utils.get_signal_len(fn, sr=self.sr)
             x['track', 'clip_duration'] = signal_len
-        except (FileNotFoundError, RuntimeError):
+        except (FileNotFoundError, RuntimeError, NoBackendError):
             print(f"WARNING: File {fn} could not be loaded. Setting clip duration to NaN.")
             x['track', 'clip_duration'] = np.nan
         return x
