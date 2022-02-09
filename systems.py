@@ -50,7 +50,7 @@ class MySystem(pl.LightningModule):
         # Loss
         loss = torch.Tensor([tmp['loss'] for tmp in outputs])
         loss = torch.mean(loss).item()
-        self.logger.experiment.add_scalar("Loss/%s" % stage, loss, self.current_epoch, sync_dist=True)
+        self.logger.experiment.add_scalar("Loss/%s" % stage, loss, self.current_epoch)
 
     def training_epoch_end(self, outputs):
         self._at_epoch_end(outputs, 'Train')
