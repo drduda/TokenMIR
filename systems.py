@@ -85,13 +85,13 @@ class MaskedSpectroSystem(MySystem):
         y = x.detach().clone()
 
         batch_size = x.shape[0]
-        # Columns are squeezed first
-        num_columns = int(x.shape[1]/self.row_mask_length)
         num_rows = x.shape[2]
 
         # Masking rows
         # Both numbers should be power of two for performing best
-        assert num_rows % self.row_mask_length == 0
+        assert x.shape[1] % self.row_mask_length == 0
+        # Columns are squeezed first
+        num_columns = int(x.shape[1] / self.row_mask_length)
 
         # Select rows randomly
         rand = torch.rand((batch_size, num_columns)).to(x.device)
