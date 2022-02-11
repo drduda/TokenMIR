@@ -1,6 +1,7 @@
 import os
 from typing import Optional, Union, List
 
+import audioread
 import torch
 import tqdm
 from torch.utils.data import Dataset, DataLoader
@@ -271,7 +272,7 @@ class FmaSpectrogramGenreDataModule(TokenMIRDataModule):
         try:
             signal_len = spec_utils.get_signal_len(fn, sr=self.sr)
             x['track', 'clip_duration'] = signal_len
-        except (FileNotFoundError, RuntimeError):
+        except (FileNotFoundError, RuntimeError, audioread.exceptions.NoBackendError):
             print(f"WARNING: File {fn} could not be loaded. Setting clip duration to NaN.")
             x['track', 'clip_duration'] = np.nan
         return x
