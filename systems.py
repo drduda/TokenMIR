@@ -205,6 +205,13 @@ class ClassificationSystem(MySystem):
         else:
             self.BERT = model
 
+        self.genre_index = pd.Index(data=['Blues', 'Classical', 'Country',
+                                     'Easy Listening', 'Electronic', 'Experimental',
+                                     'Folk', 'Hip-Hop', 'Instrumental',
+                                     'International', 'Jazz', 'Historic',
+                                     'Pop', 'Rock', 'Soul-RnB',
+                                     'Spoken'])
+
     def step(self, batch, batch_idx):
         x, y = batch
         y_hat, _ = self(x)
@@ -225,7 +232,8 @@ class ClassificationSystem(MySystem):
         # Confusion matrix
         confusion_matrix = torchmetrics.functional.confusion_matrix(preds, targets, num_classes=num_classes)
 
-        df_cm = pd.DataFrame(confusion_matrix.cpu().numpy(), index=range(num_classes), columns=range(num_classes))
+
+        df_cm = pd.DataFrame(confusion_matrix.cpu().numpy(), index=self.genre_index, columns=self.genre_index)
         plt.figure(figsize=(10, 7))
         fig_ = sns.heatmap(df_cm, annot=True, cmap='Spectral', fmt='g').get_figure()
         plt.close(fig_)
