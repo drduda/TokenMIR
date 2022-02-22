@@ -68,6 +68,8 @@ class FMACodebookDataset(FMATokenDataset):
 
     def __getitem__(self, item):
         tocken_track, Y = super().__getitem__(item)
+        codebook_track = self.codebooks[tocken_track.long()]
+        return codebook_track, Y
 
 
 class MIRDataModule(DataModule):
