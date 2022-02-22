@@ -92,7 +92,8 @@ class BERTWithCodebooks(BERTWithoutEmbedding):
         codebooks = torch.load("./codebooks.pt")
         # Append zeros for special tokens
         zeros = torch.zeros((2, 64))
-        self.codebooks = torch.cat((codebooks, zeros), 0)
+        codebooks = torch.cat((codebooks, zeros), 0)
+        self.register_buffer("codebooks", codebooks)
 
     def forward(self, x):
         # Replace with codebooks
