@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=codebook
+#SBATCH --job-name=token
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
 #SBATCH --ntasks-per-node=1
