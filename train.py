@@ -131,10 +131,9 @@ def classify_from_codebooks(ds_path, batch_size, epochs, d_model, n_head, dim_fe
     assert d_model % n_head == 0
     ds_path = os.path.expanduser(ds_path)
 
-    # Most values are taken from librosa.stft
-    data_module = CodebookDataModule(ds_path, batch_size, token_sequence_length)
+    data_module = FMATokenDataModule(ds_path, batch_size, token_sequence_length)
     logger = TensorBoardLogger("tb_log", name="codebooks/%s" % name)
-    model = architectures.BERTWithoutEmbedding(
+    model = architectures.BERTWithCodebooks(
         d_model=d_model, n_head=n_head, dim_feed=dim_feed, dropout=dropout, layers=layers,
         max_len=token_sequence_length, output_units=16, input_units=64)
     mir_system = ClassificationSystem(model=model, target_dist=data_module.get_target_distribution_weights())
@@ -142,6 +141,27 @@ def classify_from_codebooks(ds_path, batch_size, epochs, d_model, n_head, dim_fe
                          max_epochs=epochs, progress_bar_refresh_rate=20, weights_summary='full', gpus=gpus,
                          precision=precision)
     trainer.fit(mir_system, data_module)
+
+def pretrain_from_codebooks(ds_path, batch_size, epochs, d_model, n_head, dim_feed, dropout, layers, masking_percentage,
+                         gpus=-1, precision=32, token_sequence_length=1024, checkpoint_path=None, name="default"):
+    ds_path = os.path.expanduser(ds_path)
+
+    if checkpoint_path:
+        checkpoint_path = os.path.expanduser(checkpoint_path)
+
+    data_module = FMATokenDataModule(ds_path, batch_size, token_sequence_length)
+    logger = TensorBoardLogger("tb_log", name="pretrain_codebooks/%s" % name)
+    model = architectures.BERTWithCodebooks(
+        d_model=d_model, n_head=n_head, dim_feed=dim_feed, dropout=dropout, layers=layers,
+        max_len=token_sequence_length, output_units=16, input_units=64)
+
+    pretrain_system = MLMSystem(model=model, masking_percentage=masking_percentage)
+    trainer = pl.Trainer(logger=logger,
+                         max_epochs=epochs, progress_bar_refresh_rate=20, weights_summary='full', gpus=gpus,
+                         precision=precision, resume_from_checkpoint=checkpoint_path)
+    trainer.fit(pretrain_system, data_module)
+
+
 
 
 if __name__ == '__main__':
