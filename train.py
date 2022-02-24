@@ -161,8 +161,22 @@ def pretrain_from_codebooks(ds_path, batch_size, epochs, d_model, n_head, dim_fe
                          precision=precision, resume_from_checkpoint=checkpoint_path)
     trainer.fit(pretrain_system, data_module)
 
+def finetune_from_codebooks(ds_path, backbone_path, batch_size, epochs, learning_rate, gpus=-1, precision=32,
+                         token_sequence_length=1024, name="default"):
+    ds_path = os.path.expanduser(ds_path)
+    backbone_path = os.path.expanduser(backbone_path)
 
+    data_module = FMATokenDataModule(ds_path, batch_size, token_sequence_length)
+    logger = TensorBoardLogger("tb_log", name="finetune_codebooks/%s" % name)
 
+    mir_system = ClassificationSystem(backbone_path=backbone_path,
+                                      target_dist=data_module.get_target_distribution_weights(),
+                                      static_learning_rate=learning_rate,
+                                      lr_schedule=False)
+    trainer = pl.Trainer(logger=logger,
+                         max_epochs=epochs, progress_bar_refresh_rate=20, weights_summary='full', gpus=gpus,
+                         precision=precision)
+    trainer.fit(mir_system, data_module)
 
 if __name__ == '__main__':
     warnings.simplefilter("ignore", category=UserWarning)
