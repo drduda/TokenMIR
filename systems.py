@@ -30,7 +30,7 @@ class MySystem(pl.LightningModule):
 
     def configure_optimizers(self):
         if self.lr_schedule:
-            optimizer = torch.optim.Adam(self.parameters(), betas=[.9, .999], eps=1e-4, lr=1)
+            optimizer = torch.optim.Adam(self.parameters(), betas=[.9, .999], lr=1)
 
             scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=self._lr_func)
             return {
