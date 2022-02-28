@@ -74,7 +74,7 @@ class BERTWithoutEmbedding(BERT):
         super().__init__(d_model, n_head, dim_feed, dropout, layers, max_len, output_units)
 
         self.input_units = input_units
-        self.norm = torch.nn.LayerNorm(input_units, eps=6.1e-5)
+        self.norm = torch.nn.LayerNorm(input_units, eps=6.1e-5, elementwise_affine=False)
         self.projection = nn.Linear(input_units, d_model)
         self.model_for_pretraining = nn.Linear(d_model, input_units)
 
