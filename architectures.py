@@ -74,10 +74,28 @@ class BERTWithoutEmbedding(BERT):
         super().__init__(d_model, n_head, dim_feed, dropout, layers, max_len, output_units)
 
         self.input_units = input_units
-        self.norm = torch.nn.LayerNorm(input_units, eps=6.1e-5)
+        self.norm = torch.nn.LayerNorm(input_units, eps=6.1e-5, elementwise_affine=False)
         self.projection = nn.Linear(input_units, d_model)
         self.model_for_pretraining = nn.Linear(d_model, input_units)
 
     def forward(self, x):
         x = self.norm(x)
         return super().forward(self.projection(x))
+
+class BERTWithCodebooks(BERTWithoutEmbedding):
+    def __init__(self, d_model, n_head, dim_feed, dropout, layers, max_len, output_units, input_units):
+        super().__init__(d_model, n_head, dim_feed, dropout, layers, max_len, output_units, input_units)
+
+        # Replace model for pretraining so that token classification is possible
+        self.model_for_pretraining = nn.Linear(d_model, N_TOKENS)
+
+        codebooks = torch.load("./codebooks.pt")
+        # Append zeros for special tokens
+        zeros = torch.zeros((2, 64))
+        codebooks = torch.cat((codebooks, zeros), 0)
+        self.register_buffer("codebooks", codebooks)
+
+    def forward(self, x):
+        # Replace with codebooks
+        x = self.codebooks[x.long(), :]
+        return super().forward(x)

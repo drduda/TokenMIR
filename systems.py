@@ -28,7 +28,7 @@ class MySystem(pl.LightningModule):
 
     def configure_optimizers(self):
         if self.lr_schedule:
-            optimizer = torch.optim.Adam(self.parameters(), betas=[.9, .999], eps=1e-4)
+            optimizer = torch.optim.Adam(self.parameters(), betas=[.9, .999], eps=1e-4, lr=1)
 
             scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=self._lr_func)
             return {
@@ -83,13 +83,13 @@ class MaskedSpectroSystem(MySystem):
         y = x.detach().clone()
 
         batch_size = x.shape[0]
-        # Columns are squeezed first
-        num_columns = int(x.shape[1]/self.row_mask_length)
         num_rows = x.shape[2]
 
         # Masking rows
         # Both numbers should be power of two for performing best
-        assert num_rows % self.row_mask_length == 0
+        assert x.shape[1] % self.row_mask_length == 0
+        # Columns are squeezed first
+        num_columns = int(x.shape[1] / self.row_mask_length)
 
         # Select rows randomly
         rand = torch.rand((batch_size, num_columns)).type_as(x)
@@ -202,6 +202,13 @@ class ClassificationSystem(MySystem):
         else:
             self.BERT = model
 
+        self.genre_index = pd.Index(data=['Blues', 'Classical', 'Country',
+                                     'Easy Listening', 'Electronic', 'Experimental',
+                                     'Folk', 'Hip-Hop', 'Instrumental',
+                                     'International', 'Jazz', 'Historic',
+                                     'Pop', 'Rock', 'Soul-RnB',
+                                     'Spoken'])
+
     def step(self, batch, batch_idx):
         x, y = batch
         y_hat, _ = self(x)
@@ -222,7 +229,8 @@ class ClassificationSystem(MySystem):
         # Confusion matrix
         confusion_matrix = torchmetrics.functional.confusion_matrix(preds, targets, num_classes=num_classes)
 
-        df_cm = pd.DataFrame(confusion_matrix.cpu().numpy(), index=range(num_classes), columns=range(num_classes))
+
+        df_cm = pd.DataFrame(confusion_matrix.cpu().numpy(), index=self.genre_index, columns=self.genre_index)
         plt.figure(figsize=(10, 7))
         fig_ = sns.heatmap(df_cm, annot=True, cmap='Spectral', fmt='g').get_figure()
         plt.close(fig_)
