@@ -43,7 +43,7 @@ def classify_from_tokens(ds_path, batch_size, epochs, d_model, n_head, dim_feed,
         max_len=token_sequence_length, output_units=16)
 
     mir_system = ClassificationSystem(model=model, target_dist=data_module.get_target_distribution_weights())
-    trainer = pl.Trainer(logger=logger,
+    trainer = pl.Trainer(logger=logger, accelerator="ddp",
         max_epochs=epochs, progress_bar_refresh_rate=20, weights_summary='full', gpus=gpus, precision=precision)
     trainer.fit(mir_system, data_module)
 
@@ -65,7 +65,7 @@ def pretrain_from_spectrograms(fma_dir, batch_size, epochs, d_model, n_head, dim
     mir_system = MaskedSpectroSystem(model=model, row_mask_length=row_mask_length)
     trainer = pl.Trainer(logger=logger,
                          max_epochs=epochs, progress_bar_refresh_rate=20, weights_summary='full', gpus=gpus,
-                         precision=precision)
+                         precision=precision, accelerator="ddp")
     trainer.fit(mir_system, data_module)
 
 def finetune_from_spectrograms(fma_dir, backbone_path, batch_size, epochs, learning_rate, gpus=-1, precision=32,
@@ -137,7 +137,7 @@ def classify_from_codebooks(ds_path, batch_size, epochs, d_model, n_head, dim_fe
         d_model=d_model, n_head=n_head, dim_feed=dim_feed, dropout=dropout, layers=layers,
         max_len=token_sequence_length, output_units=16, input_units=64)
     mir_system = ClassificationSystem(model=model, target_dist=data_module.get_target_distribution_weights())
-    trainer = pl.Trainer(logger=logger,
+    trainer = pl.Trainer(logger=logger, accelerator="ddp",
                          max_epochs=epochs, progress_bar_refresh_rate=20, weights_summary='full', gpus=gpus,
                          precision=precision)
     trainer.fit(mir_system, data_module)
