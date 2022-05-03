@@ -73,14 +73,15 @@ class FMACodebookDataset(FMATokenDataset):
 
 
 class MIRDataModule(DataModule):
-    def __init__(self, data_dir, batch_size, token_length):
+    def __init__(self, data_dir, batch_size, token_length, ds_size="medium"):
         super().__init__()
         self.data_dir = data_dir
         self.batch_size = batch_size
         self.token_length = token_length
+        self.ds_size = ds_size
 
     def get_target_distribution_weights(self):
-        train_path = os.path.join(self.data_dir, "tokens_ds_size_medium_split_training.pt")
+        train_path = os.path.join(self.data_dir, "tokens_ds_size_"+self.ds_size+"_split_training.pt")
         train_ds = FMATokenDataset(train_path, self.token_length)
 
         target_distribution = train_ds.Y.value_counts().sort_index()
@@ -106,22 +107,22 @@ class MIRDataModule(DataModule):
 
 class FMATokenDataModule(MIRDataModule):
     def setup(self, stage: Optional[str] = None):
-        train_path = os.path.join(self.data_dir, "tokens_ds_size_medium_split_training.pt")
+        train_path = os.path.join(self.data_dir, "tokens_ds_size_"+self.ds_size+"_split_training.pt")
         self.train_ds = FMATokenDataset(train_path, self.token_length)
 
-        val_path = os.path.join(self.data_dir, "tokens_ds_size_medium_split_validation.pt")
+        val_path = os.path.join(self.data_dir, "tokens_ds_size_"+self.ds_size+"_split_validation.pt")
         self.val_ds = FMATokenDataset(val_path, self.token_length)
 
-        test_path = os.path.join(self.data_dir, "tokens_ds_size_medium_split_test.pt")
+        test_path = os.path.join(self.data_dir, "tokens_ds_size_"+self.ds_size+"_split_test.pt")
         self.test_ds = FMATokenDataset(test_path, self.token_length)
 
 class CodebookDataModule(MIRDataModule):
     def setup(self, stage: Optional[str] = None):
-        train_path = os.path.join(self.data_dir, "tokens_ds_size_medium_split_training.pt")
+        train_path = os.path.join(self.data_dir, "tokens_ds_size_"+self.ds_size+"_split_training.pt")
         self.train_ds = FMACodebookDataset(train_path, self.token_length)
 
-        val_path = os.path.join(self.data_dir, "tokens_ds_size_medium_split_validation.pt")
+        val_path = os.path.join(self.data_dir, "tokens_ds_size_"+self.ds_size+"_split_validation.pt")
         self.val_ds = FMACodebookDataset(val_path, self.token_length)
 
-        test_path = os.path.join(self.data_dir, "tokens_ds_size_medium_split_test.pt")
+        test_path = os.path.join(self.data_dir, "tokens_ds_size_"+self.ds_size+"_split_test.pt")
         self.test_ds = FMACodebookDataset(test_path, self.token_length)

@@ -91,13 +91,13 @@ def finetune_from_spectrograms(fma_dir, backbone_path, batch_size, epochs, learn
     trainer.fit(mir_system, data_module)
 
 def pretrain_from_tokens(ds_path, batch_size, epochs, d_model, n_head, dim_feed, dropout, layers, masking_percentage,
-                         gpus=-1, precision=32, token_sequence_length=1024, checkpoint_path=None, name="default"):
+                         gpus=-1, precision=32, token_sequence_length=1024, checkpoint_path=None, ds_size="medium", name="default"):
     ds_path = os.path.expanduser(ds_path)
 
     if checkpoint_path:
         checkpoint_path = os.path.expanduser(checkpoint_path)
 
-    data_module = FMATokenDataModule(ds_path, batch_size, token_sequence_length)
+    data_module = FMATokenDataModule(ds_path, batch_size, token_sequence_length, ds_size)
     logger = TensorBoardLogger("tb_log", name="pretrain_tokens/%s" % name)
     model = architectures.BERTWithEmbedding(
         d_model=d_model, n_head=n_head, dim_feed=dim_feed, dropout=dropout, layers=layers,
