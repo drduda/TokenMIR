@@ -215,7 +215,11 @@ class ClassificationSystem(MySystem):
     def step(self, batch, batch_idx):
         x, y = batch
         y_hat, _ = self(x)
-        loss = torch.nn.functional.cross_entropy(y_hat, y.long(), weight=self.target_dist.type_as(y_hat))
+        try:
+            self.target_dist = self.target_dist.type_as(y_hat)
+        except(AttributeError):
+            pass
+        loss = torch.nn.functional.cross_entropy(y_hat, y.long(), weight=self.target_dist)
         return {'loss': loss, 'preds': y_hat.detach(), 'target': y}
 
     def _at_epoch_end(self, outputs, stage=None):
