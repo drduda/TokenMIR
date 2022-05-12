@@ -41,6 +41,12 @@ class FMATokenDataset(Dataset):
     def __init__(self, ds_path, length):
         super().__init__()
         self.token_tracks_ds, self.tracks_length, self.Y = torch.load(ds_path)
+
+        # Cast if necessary
+        if type(self.Y) is torch.Tensor:
+            import pandas as pd
+            self.Y = pd.Series(self.Y)
+
         self.size = len(self.token_tracks_ds)
         self.output_units = self.Y.max() + 1
         self.length = length
