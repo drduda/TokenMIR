@@ -110,7 +110,7 @@ def pretrain_from_tokens(ds_path, batch_size, epochs, d_model, n_head, dim_feed,
     trainer.fit(pretrain_system, data_module)
 
 def finetune_from_tokens(ds_path, backbone_path, batch_size, epochs, learning_rate, gpus=-1, precision=32,
-                         token_sequence_length=1024, ds_size="medium", class_weighting=False, name="default"):
+                         token_sequence_length=1024, ds_size="medium", class_weighting=True, name="default"):
     ds_path = os.path.expanduser(ds_path)
     backbone_path = os.path.expanduser(backbone_path)
 
