@@ -79,7 +79,6 @@ class BERTWithoutEmbedding(BERT):
         self.model_for_pretraining = nn.Linear(d_model, input_units)
 
     def forward(self, x):
-        x = self.norm(x)
         return super().forward(self.projection(x))
 
 class BERTWithCodebooks(BERTWithoutEmbedding):

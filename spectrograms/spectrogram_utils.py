@@ -94,8 +94,16 @@ def gen_spec(filename: str, n_fft: int, hop_length: int, sr: int = None, n_mels:
     y, sr = librosa.load(path=filename, sr=sr)
     # Swap axes
     spec = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=n_mels, n_fft=n_fft, hop_length=hop_length).swapaxes(0,1)
-    spec = librosa.power_to_db(spec, ref=np.max)
+    spec = z_norm(librosa.power_to_db(spec, ref=np.max))
+
     return spec, sr
+
+
+def z_norm(array):
+    """
+    Normalize the array to have zero mean and unit variance.
+    """
+    return (array - array.mean()) / array.std()
 
 
 def get_signal_len(filename: str, sr: int = None) -> float:
