@@ -2,7 +2,7 @@ data
 .idea
 .ipynb_checkpoints
 .run
-
+fma_data
 __pycache__
 */__pycache__/*
 *.pyc
