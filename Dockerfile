@@ -6,5 +6,5 @@ RUN git clone https://github.com/drduda/TokenMIR.git
 WORKDIR /TokenMIR
 RUN git checkout docker
 RUN ls
-RUN conda env create -f env.yml
+RUN conda env create --force -f=env.yml -n base
 CMD ["bash"]
